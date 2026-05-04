@@ -1,0 +1,17 @@
+[package]
+name = "midistage-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "midistage core — transport (UMP) + protocol (SysEx / MIDI-CI PE) + 7-bit encoding"
+
+[dependencies]
+tracing.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+
+# CoreMIDI FFI は手書き (coremidi_sys.rs)、 macOS 上で直接 framework link する。
+# Linux / Windows サポートは v1+ で alsa / WinMM 等を別 cfg で追加する。

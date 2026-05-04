@@ -1,0 +1,114 @@
+// midistage profile — Keystage default
+//
+// reference: KORG Keystage MIDI Implementation v1.00 (2023.8.31)
+// docs: ~/repos/cplp-sound-system/docs/midi/Keystage/Keystage_MIDIimp.txt
+//
+// この example は v0-alpha の `midistage init` で生成される template の参考形。
+// 実際の defaults 値は KORG 公式 docs の TABLE 1 / TABLE 2 から決定する。
+
+meta {
+    device "keystage"
+    model "Keystage-49"  // or "Keystage-61"
+    profile-version 1
+}
+
+// Global Data (TABLE 2、 3667 byte) — device 横断的な設定
+global {
+    midi-channel 0
+    controller-mode "Assignable"  // Logic / Cubase / Live / FL Studio / Studio One / GarageBand / ...
+
+    keyboard {
+        velocity-curve 10        // 0~20 (-10 ~ +10)
+        aftertouch-mode "Polyphonic"  // Off / Channel / Polyphonic / MPE
+        aftertouch-curve 10
+        aftertouch-threshold 0
+        aftertouch-max 127
+    }
+
+    pedal 1 {
+        assign-type "Damper"     // Damper / Expression
+        assign-mode "Damper"     // Damper / Expression / CC / ProgramUp / ProgramDown
+        cc-number 64
+        curve 10
+    }
+
+    pedal 2 {
+        assign-type "Expression"
+        assign-mode "CC"
+        cc-number 11
+        curve 10
+    }
+
+    power {
+        contrast 5
+        auto-power-off "Disabled"  // Disabled / 1hour / 2hours / 3hours / 4hours
+        auto-screen-off "5min"
+    }
+}
+
+// Scene Data (TABLE 1、 500 byte/scene、 8 scene まで device 内蔵 memory に保存可能)
+scene 0 {
+    name "Default"
+
+    modulation-mapping mod-wheel=1 velocity=0 aftertouch=2
+
+    keyboard {
+        midi-channel "global"    // 1~16 or "global"
+        octave 0                 // -3 ~ +3
+        transpose 0              // -12 ~ +12
+    }
+
+    wheel {
+        midi-channel "global"
+        lower 0
+        upper 127
+    }
+
+    arpeggiator {
+        mode "Up"                // Up / Down / Up-Down / Down-Up / Play / Random / Trigger
+        octave 1                 // 1~4
+        latch false
+        rate "1/16"              // 1/1, 1/2, 1/3, 1/4, 1/6, 1/8, 1/12, 1/16, 1/24, 1/32, 1/48, 1/64
+        swing 0
+    }
+
+    // 128 個の Knob は default + override で簡潔に書ける (User Page 16 × Knob 8)
+    knob "default" {
+        midi-channel "global"
+        left 0
+        right 127
+    }
+
+    knob 1 {
+        midi-channel 1
+        cc 22
+        left 0
+        right 127
+    }
+
+    /- knob 2 { ... }  // KDL の slash-dash で個別 knob を comment-out 可能
+
+    button "play" {
+        midi-channel "global"
+        assign-type "CC"          // NoAssign / CC / Note
+        behavior "Toggle"         // Toggle / Momentary
+        cc-or-note 118
+        off-value 0
+        on-value 127
+    }
+
+    button "stop" {
+        midi-channel "global"
+        assign-type "CC"
+        behavior "Momentary"
+        cc-or-note 117
+        off-value 0
+        on-value 127
+    }
+
+    // ... rec / loop / tempo / metro / undo / track-down / track-up
+}
+
+/- scene 1 { ... }
+/- scene 2 { ... }
+// scene 3 ~ 7 (KORG SysEx Func=0x14 で切替、 Func=0x11 で memory slot 0~7 に焼く)

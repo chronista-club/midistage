@@ -1,0 +1,16 @@
+[package]
+name = "midistage-keystage"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "midistage Keystage device module — Scene / Global struct + KDL serde + binary serde"
+
+[dependencies]
+midistage-core.workspace = true
+knus.workspace = true
+anyhow.workspace = true
+thiserror.workspace = true
+tracing.workspace = true
