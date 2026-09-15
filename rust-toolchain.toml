@@ -1,0 +1,6 @@
+# Rust toolchain の SSOT (rustup ネイティブ pin、mise 非依存)。
+# ローカル・CI・IDE がこの版に揃う。
+# Cargo.toml の rust-version と一致させること。
+[toolchain]
+channel = "1.94"
+components = ["rustfmt", "clippy"]
