@@ -1,2 +1,19 @@
-[tools]
-rust = "1.94"
+# Rust は rust-toolchain.toml / rustup で管理する。mise には rust を置かない。
+# mbx も `cargo install mbx --locked` で ~/.cargo/bin に入れる（mise に置くと版未指定の
+# ディレクトリで shim が失敗する。VP と同じ流儀）。
+
+# dev loop の check / test は mbx（mr boxington）経由。rustc を shim して checkout 横断の
+# content-addressed キャッシュを引く。初回（dep-info 未学習）は素の cargo より遅く、
+# 2 回目以降に効く（VP 実測: 初回 2 倍 / 2 回目以降 59 倍）。
+# install / release 系は素の cargo のまま。
+[tasks.check]
+description = "型・借用チェック（mbx 経由）"
+run = "mbx check --workspace --all-targets"
+
+[tasks.test]
+description = "テスト（mbx 経由）"
+run = "mbx test --workspace"
+
+[tasks.clippy]
+description = "clippy（mbx 経由）"
+run = "mbx clippy --workspace --all-targets"

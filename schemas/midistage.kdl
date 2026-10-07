@@ -1,0 +1,44 @@
+// 同一ユーザー / 同一 Mac の MIDI 機材利用契約。正典: docs/design/03-runtime-service.md
+protocol "midistage" version="1.0.0" {
+    namespace "club.chronista.midistage"
+    channel "midistage" from="client" lifetime="persistent" {
+        request "Hello" {
+            field "protocol_version" type="int" required=#true
+            field "client_id" type="string" required=#true
+            field "display_name" type="string" required=#true
+            field "auth_token" type="string" required=#true
+            field "native_midi" type="bool"
+            field "initial_enabled_profiles" type="array<string>"
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "Snapshot" {
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "SetEnabled" {
+            field "device_id" type="string" required=#true
+            field "enabled" type="bool" required=#true
+            field "expected_revision" type="int" required=#true
+            field "takeover" type="bool"
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "Quiesced" {
+            field "device_id" type="string" required=#true
+            field "lease_token" type="string" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "SendMidi" {
+            field "device_id" type="string" required=#true
+            field "lease_token" type="string" required=#true
+            field "port_name" type="string" required=#true
+            field "bytes" type="array<int>" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "Present" {
+            field "device_id" type="string" required=#true
+            field "lease_token" type="string" required=#true
+            field "controls" type="json" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        event "Event" { field "kind" type="string" required=#true; }
+    }
+}
