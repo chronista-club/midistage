@@ -27,6 +27,7 @@ pub fn inventory(ports: &[Port]) -> BTreeMap<String, DevicePorts> {
         .iter()
         .map(|(id, _)| ((*id).into(), DevicePorts::default()))
         .collect();
+    let mut unknown: BTreeMap<u32, Vec<Port>> = BTreeMap::new();
     for port in ports {
         if port.physical_device == 0 || port.name.starts_with("Midistage/") {
             continue;
@@ -40,6 +41,20 @@ pub fn inventory(ports: &[Port]) -> BTreeMap<String, DevicePorts> {
                 .expect("known profile")
                 .ports
                 .push(port.clone());
+        } else {
+            unknown
+                .entry(port.physical_device)
+                .or_default()
+                .push(port.clone());
+        }
+    }
+    for ports in unknown.into_values() {
+        if let Some(name) = ports.iter().map(|p| p.name.to_lowercase()).min() {
+            found
+                .entry(format!("generic:{name}"))
+                .or_default()
+                .ports
+                .extend(ports);
         }
     }
     for device in found.values_mut() {
@@ -95,16 +110,19 @@ mod tests {
         assert!(found["keystage"].ports.is_empty());
     }
     #[test]
-    fn virtual_and_unrecognized_ports_do_not_impersonate_physical_gear() {
+    fn virtual_ports_are_ignored_and_unknown_physical_ports_keep_their_identity() {
         let found = inventory(&[
             port(1, 0, "Midistage/vp/lease | Roto-Control", true),
             port(2, 0, "Ladyland RotoInject", false),
             port(3, 55, "Zenith 2", true),
         ]);
-        assert_eq!(found.len(), PROFILES.len());
+        assert_eq!(found.len(), PROFILES.len() + 1);
+        assert_eq!(found["generic:zenith 2"].ports.len(), 1);
         assert!(
             found
-                .values()
+                .iter()
+                .filter(|(id, _)| !id.starts_with("generic:"))
+                .map(|(_, d)| d)
                 .all(|d| d.ports.is_empty() && d.error.is_none())
         );
     }
@@ -118,5 +136,17 @@ mod tests {
         ]);
         assert_eq!(found["numa"].ports.len(), 2);
         assert_eq!(found["xtouch"].ports[0].name, "X-Touch INT");
+    }
+    #[test]
+    fn unknown_physical_keyboard_remains_available_across_hub_ids() {
+        let before = inventory(&[port(1, 11, "Studio Keyboard MIDI", true)]);
+        let after = inventory(&[port(88, 99, "Studio Keyboard MIDI", true)]);
+        assert_eq!(before["generic:studio keyboard midi"].ports.len(), 1);
+        assert_eq!(after["generic:studio keyboard midi"].ports.len(), 1);
+        let duplicate = inventory(&[
+            port(1, 11, "Studio Keyboard MIDI", true),
+            port(2, 22, "Studio Keyboard MIDI", true),
+        ]);
+        assert!(duplicate["generic:studio keyboard midi"].error.is_some());
     }
 }

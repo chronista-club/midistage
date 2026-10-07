@@ -33,7 +33,7 @@ presence（実機検出）、assignment（保存された担当と revision / ex
 
 物理切断も cleanup を通して waiting へ遷移する。セッション切断では lease を破棄するが assignment を保持し、再接続で復元する。サービス再起動で token は必ず変わる。OFF は保存され、挿し直しや初回既定設定で上書きしない。初回移行の既定 ON は既存 owner を奪わない。
 
-v1 は一機種につき一台。CoreMIDI の物理 device ID で Keystage の複数ポートをまとめ、保存先は profile に対応する device ID とする。Hub 交換で endpoint ID や順序が変わっても割り当てを保持する。同一機種が複数台なら接続を止めて error を表示する。未知の機種や他アプリの仮想ポートを既知機材と誤認しない。
+v1 は一機種につき一台。CoreMIDI の物理 device ID で Keystage の複数ポートをまとめ、保存先は profile に対応する device ID とする。Hub 交換で endpoint ID や順序が変わっても割り当てを保持する。同一機種が複数台なら接続を止めて error を表示する。未知の物理機材は generic としてポート名に基づく別 ID で一覧に残し、既存の汎用鍵盤経路を維持する。同名の複数台は既知機種と同じく曖昧さを表示して止める。他アプリの仮想ポートを物理機材と誤認しない。
 
 仮想ポートが開くまで snapshot は waiting。releasing 中は旧 lease を停止通知の宛先としてだけ残す。Unison の event は混雑時に欠落しうるため、状態は定期再送、Quiesce は停止確認まで再送する。演奏データは native MIDI で元の入力 timestamp を保持する。出力は即時制御用で、アプリの将来時刻の MIDI 演奏スケジューラとしては扱わない。
 
@@ -49,3 +49,11 @@ v1 は一機種につき一台。CoreMIDI の物理 device ID で Keystage の�
 
 - 2026-10-07: 共通サービス方式を承認。直接接続 + アプリ間 flock 案を廃止し、protocol / daemon / profile / SDK の分割で着手。
 - 2026-10-07: Rust / Swift の実 Unison 接続で認証、確認付き引き継ぎ、旧 lease 拒否、明示 cleanup ack を検証。CoreMIDI bridge はコンパイル確認まで。ユーザーの Hub 交換後に物理ポートを read-only 列挙し、Keystage / LPD8 / nanoKONTROL2 / ROTO の対応を確認。実機 I/O・Ladyland / VP 統合は未確認。
+
+### Keystage 接続モードの後始末
+
+物理送信に成功した Keystage の connect (0x6F / payload 01) だけを destination ごとに記録する。
+通常の disconnect 成功時に記録を消し、handoff 時に残っていれば同じ機種・channel の payload 00 を送る。
+この最終処理は旧アプリの Quiesced と driver completion の後、次の lease を渡す前に行う。
+解除用の client 権限は追加せず、解除失敗では Releasing を保持する。抜線済み endpoint は処理対象外。
+CoreMIDI completion 待ちは runtime mutex の外で行い、送信成功の記録まで in-flight fence を保持する。

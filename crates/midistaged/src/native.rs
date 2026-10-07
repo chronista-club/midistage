@@ -16,6 +16,7 @@ use std::{
 };
 
 type Shared = Arc<Mutex<Runtime>>;
+type Finalizers = Arc<Mutex<BTreeMap<u32, Vec<u8>>>>;
 
 fn os<T>(result: Result<T, i32>) -> anyhow::Result<T> {
     result.map_err(|status| anyhow::anyhow!("CoreMIDI status {status}"))
@@ -147,6 +148,7 @@ fn output_worker(
     fence: Arc<IoFence>,
     output: OutputPort,
     receiver: mpsc::Receiver<OutputRequest>,
+    finalizers: Finalizers,
 ) {
     while let Ok(message) = receiver.recv() {
         let permit = {
@@ -159,6 +161,10 @@ fn output_worker(
             }
             continue;
         }; // 古い仮想ポートに溜まった送信は破棄。
+        // Keep the fence held through success bookkeeping, after the OS callback.
+        let _operation = permit.clone();
+        let inverse = midistage_profiles::keystage::disconnect_after(&message.bytes);
+        let disconnect = midistage_profiles::keystage::is_disconnect(&message.bytes);
         let result = if message.bytes.first() == Some(&0xf0) {
             raw_endpoint(message.destination)
                 .and_then(|destination| send_sysex(destination, message.bytes, permit))
@@ -173,6 +179,14 @@ fn output_worker(
             drop(permit);
             result
         };
+        if result.is_ok() {
+            let mut pending = finalizers.lock().expect("finalizers mutex poisoned");
+            if let Some(frame) = inverse {
+                pending.insert(message.destination, frame);
+            } else if disconnect {
+                pending.remove(&message.destination);
+            }
+        }
         if let Err(error) = &result {
             fault(&runtime, &fence, error.to_string());
         }
@@ -193,6 +207,7 @@ pub struct NativeBridge {
     pub ports: NativePorts,
     output_sinks: BTreeMap<String, OutputSink>,
     physical_ports: Vec<Port>,
+    finalizers: Finalizers,
 }
 impl NativeBridge {
     pub fn open(
@@ -214,8 +229,17 @@ impl NativeBridge {
         let (sender, receiver) = mpsc::sync_channel(256);
         let worker_runtime = runtime.clone();
         let worker_fence = fence.clone();
-        let worker =
-            thread::spawn(move || output_worker(worker_runtime, worker_fence, output, receiver));
+        let finalizers = Arc::new(Mutex::new(BTreeMap::new()));
+        let worker_finalizers = finalizers.clone();
+        let worker = thread::spawn(move || {
+            output_worker(
+                worker_runtime,
+                worker_fence,
+                output,
+                receiver,
+                worker_finalizers,
+            )
+        });
         let mut bridge = Self {
             client,
             inputs: vec![],
@@ -227,6 +251,7 @@ impl NativeBridge {
             ports: NativePorts::default(),
             output_sinks: BTreeMap::new(),
             physical_ports: ports.to_vec(),
+            finalizers,
         };
         for port in ports {
             let name = format!(
@@ -315,6 +340,28 @@ impl NativeBridge {
         }
         Ok(bridge)
     }
+    fn finish_release(&self, runtime: &Shared) -> anyhow::Result<()> {
+        let pending = self
+            .finalizers
+            .lock()
+            .expect("finalizers mutex poisoned")
+            .clone();
+        for (uid, frame) in pending {
+            let permit = {
+                let r = runtime.lock().expect("runtime mutex poisoned");
+                self.fence.begin_cleanup(&r.broker)?
+            };
+            // An unplugged endpoint has no reachable connection mode to restore.
+            if let Ok(endpoint) = raw_endpoint(uid) {
+                send_sysex(endpoint, frame, permit)?;
+            }
+            self.finalizers
+                .lock()
+                .expect("finalizers mutex poisoned")
+                .remove(&uid);
+        }
+        self.flush()
+    }
     fn flush(&self) -> anyhow::Result<()> {
         for port in self.physical_ports.iter().filter(|p| !p.input) {
             // 抜線済み endpoint は送信先自体が消えている。
@@ -379,7 +426,29 @@ impl NativeRuntime {
         let found = discover();
         {
             let mut r = self.runtime.lock().expect("runtime mutex poisoned");
+            let disappeared: Vec<_> = r
+                .broker
+                .devices
+                .keys()
+                .filter(|id| !found.contains_key(*id))
+                .cloned()
+                .collect();
+            for id in disappeared {
+                let _ = r.broker.set_present(&id, false);
+            }
             for (id, device) in &found {
+                if !r.broker.devices.contains_key(id) {
+                    r.broker.add_device(id, "generic", false);
+                    r.broker
+                        .devices
+                        .get_mut(id)
+                        .expect("discovered device")
+                        .name = device
+                        .ports
+                        .first()
+                        .map(|p| p.name.clone())
+                        .unwrap_or_else(|| id.clone());
+                }
                 if self.inventory.get(id) != Some(device) {
                     if self.bridges.contains_key(id) {
                         let _ = r.broker.set_present(id, false);
@@ -405,36 +474,46 @@ impl NativeRuntime {
             .collect();
         for state in states {
             if state.phase == Phase::Releasing {
-                let mut released = false;
-                {
-                    let mut r = self.runtime.lock().expect("runtime mutex poisoned");
-                    if r.broker.is_quiescent(&state.device_id) {
-                        let result = if let Some(bridge) = self.bridges.get(&state.device_id) {
-                            if bridge.fence.is_idle() {
-                                match bridge.flush() {
-                                    Ok(()) => bridge.fence.drained(&mut r.broker),
-                                    Err(error) => {
-                                        r.driver_errors
-                                            .insert(state.device_id.clone(), error.to_string());
-                                        Err(midistage_protocol::AccessError::Pending)
-                                    }
-                                }
-                            } else {
-                                Err(midistage_protocol::AccessError::Pending)
-                            }
-                        } else {
-                            r.broker.drained(&state.device_id)
-                        };
-                        if result.is_ok() {
-                            if let Some(binding) = r.native_bindings.remove(&state.device_id) {
-                                for name in binding.ports.outputs {
-                                    r.output_sinks.remove(&name);
-                                }
-                            }
-                            released = true;
-                        }
-                    }
+                let ready = {
+                    let r = self.runtime.lock().expect("runtime mutex poisoned");
+                    r.broker.is_quiescent(&state.device_id)
+                        && self
+                            .bridges
+                            .get(&state.device_id)
+                            .is_none_or(|b| b.fence.is_idle())
+                };
+                if !ready {
+                    continue;
                 }
+                // CoreMIDI completion may take time. Control requests must stay responsive.
+                if let Some(bridge) = self.bridges.get(&state.device_id)
+                    && let Err(error) = bridge.finish_release(&self.runtime)
+                {
+                    self.runtime
+                        .lock()
+                        .expect("runtime mutex poisoned")
+                        .driver_errors
+                        .insert(state.device_id.clone(), error.to_string());
+                    continue;
+                }
+                let released = {
+                    let mut r = self.runtime.lock().expect("runtime mutex poisoned");
+                    let result = if let Some(bridge) = self.bridges.get(&state.device_id) {
+                        bridge.fence.drained(&mut r.broker)
+                    } else {
+                        r.broker.drained(&state.device_id)
+                    };
+                    if result.is_ok() {
+                        if let Some(binding) = r.native_bindings.remove(&state.device_id) {
+                            for name in binding.ports.outputs {
+                                r.output_sinks.remove(&name);
+                            }
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                };
                 if released {
                     self.bridges.remove(&state.device_id);
                 }

@@ -24,6 +24,12 @@ pub struct Runtime {
 impl Runtime {
     pub fn new(mut broker: Broker, store: SettingsStore) -> anyhow::Result<Self> {
         let saved = store.load()?;
+        for (id, device) in &saved.devices {
+            if !broker.devices.contains_key(id) {
+                broker.add_device(id, &device.profile_id, false);
+                broker.devices.get_mut(id).expect("restored device").name = device.name.clone();
+            }
+        }
         broker.restore(
             &saved
                 .devices
@@ -190,5 +196,27 @@ mod tests {
         assert!(r.hello("a", &request).is_err());
         request.protocol_version = PROTOCOL_VERSION;
         r.hello("a", &request).unwrap();
+    }
+    #[test]
+    fn saved_generic_keyboard_is_restored_even_before_os_enumeration() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut r = runtime(dir.path());
+        r.broker
+            .add_device("generic:studio keyboard midi", "generic", true);
+        r.hello("s", &hello("ladyland")).unwrap();
+        r.set_enabled(
+            "s",
+            &SetEnabled {
+                device_id: "generic:studio keyboard midi".into(),
+                enabled: true,
+                expected_revision: 0,
+                takeover: false,
+            },
+        )
+        .unwrap();
+        let restored = runtime(dir.path());
+        let device = &restored.broker.devices["generic:studio keyboard midi"];
+        assert_eq!(device.assignment.client_id.as_deref(), Some("ladyland"));
+        assert_eq!(device.phase, Phase::Waiting);
     }
 }
