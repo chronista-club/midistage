@@ -197,6 +197,7 @@ fn output_worker(
 }
 
 pub struct NativeBridge {
+    runtime: Shared,
     client: Client,
     inputs: Vec<InputPort>,
     sources: Vec<Arc<VirtualSource>>,
@@ -241,6 +242,7 @@ impl NativeBridge {
             )
         });
         let mut bridge = Self {
+            runtime: runtime.clone(),
             client,
             inputs: vec![],
             sources: vec![],
@@ -385,6 +387,19 @@ impl Drop for NativeBridge {
         // runtime mutex の外で drop すること。worker は認可時に同じ mutex を取る。
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
+        }
+        // Graceful service shutdown also disconnects outstanding Keystage modes.
+        // The callback signals completion before dropping its permit; wait for that tail.
+        while !self.fence.is_idle() {
+            thread::sleep(std::time::Duration::from_millis(1));
+        }
+        let needs_finalization = !self
+            .finalizers
+            .lock()
+            .expect("finalizers mutex poisoned")
+            .is_empty();
+        if needs_finalization && let Err(error) = self.finish_release(&self.runtime) {
+            tracing::error!(device = %self.fence.device_id, %error, "device finalization failed during close");
         }
     }
 }
