@@ -1,0 +1,12 @@
+[package]
+name = "midistage-profiles"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "MIDI コントローラーの入力・表示変換（I/O なし）"
+
+[dependencies]
+serde.workspace = true
+sha1 = "0.11"

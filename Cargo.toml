@@ -4,6 +4,10 @@ members = [
     "crates/midistage-core",
     "crates/midistage-cli",
     "crates/midistage-keystage",
+    "crates/midistage-protocol",
+    "crates/midistage-profiles",
+    "crates/midistaged",
+    "crates/midistage-client",
 ]
 
 [workspace.package]
@@ -24,6 +28,8 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # KDL parser — knus を仮選定 (fleetflow / bikeboy で dogfood 済み)、 v0-alpha 実装時に再評価
 knus = "3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 [profile.release]
 lto = true
