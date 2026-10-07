@@ -29,12 +29,14 @@ crates/
 ## 開発コマンド
 
 ```bash
-cargo build --workspace
-cargo test --workspace
-cargo install --path crates/midistage-cli   # binary install
+mise run check                              # mbx check --workspace --all-targets
+mise run test                               # mbx test --workspace
+mise run clippy                             # mbx clippy --workspace --all-targets
 cargo fmt --all -- --check
-cargo clippy --workspace --all-targets
+cargo install --path crates/midistage-cli   # binary install（素の cargo）
 ```
+
+Rust は `rust-toolchain.toml`（rustup）で固定し、mise では管理しない。dev loop の check / test / clippy は mbx 経由、install / release 系は素の cargo のまま。
 
 ## protocol stack
 
