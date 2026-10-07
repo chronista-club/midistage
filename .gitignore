@@ -7,3 +7,6 @@ Cargo.lock.bak
 *.swp
 .idea/
 .vscode/
+
+# Vantage Point lane workspaces (repo-local lane refactor)
+.vp/

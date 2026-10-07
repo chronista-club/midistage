@@ -41,7 +41,7 @@ MIDI-CI Property Exchange は **read-only** (Keystage 仕様)。 設定の write
 
 ## License
 
-Dual-licensed: **Apache-2.0 OR MIT** (publish 時に決定可能)。
+Dual-licensed: **Apache-2.0 OR MIT**。[LICENSE-APACHE](LICENSE-APACHE) / [LICENSE-MIT](LICENSE-MIT) を参照。
 
 ## Origin
 
