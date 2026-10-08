@@ -1,6 +1,6 @@
 //! midistage CLI binary
 //!
-//! KORG MIDI 2.0 device configurator。 v0 計画は CLAUDE.md / README.md 参照。
+//! KORG MIDI 2.0 device configurator。 計画中のコマンドは AGENTS.md 参照。
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
