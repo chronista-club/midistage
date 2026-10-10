@@ -1,12 +1,12 @@
 # 04. 機材の 3D 資産 — 意味の層と見た目の層
 
 **ステータス**: Draft（2026-10-10 起工、wip/gear-assets）
-**起点**: VP devices-3d lane からの handoff（creo mem_1Cfsv1jjEsr26BcBACweHx）。
+**起点**: アプリ B（Web、GLB 利用）の 3D lane からの handoff（creo mem_1Cfsv1jjEsr26BcBACweHx）。
 mako「midistage に集めるか。3D モデルも。」→ Ladyland で Conception →「C で」
 
 ## なぜここに置くか
 
-機材の形・実寸・操作子の対応は、アプリ（Ladyland / VP）ではなく機材の事実。
+機材の形・実寸・操作子の対応は、アプリ（Ladyland / アプリ B）ではなく機材の事実。
 midistage は「宣言ファイルが正本、機材上の状態は投影」の場所なので、機材の
 3D 資産もここが正本になる。アプリは机の配置・タブ・カメラ・使用権の見せ方だけを持つ。
 
@@ -42,10 +42,10 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 
 - git に入れるのは**生成元だけ**（gear.json、.blend、スクリプト、プレビュー PNG）
 - `gear/build.py` が `~/Library/Application Support/midistage/gear/` に書く:
-  `<id>.usdz`（Ladyland）、`<id>.glb`（VP）、`<id>.json`（鍵盤展開済み）、
+  `<id>.usdz`（Ladyland）、`<id>.glb`（アプリ B、Web）、`<id>.json`（鍵盤展開済み）、
   `environment.exr`、`manifest.json`（schema version / 各ファイルの sha256 / 生成元 commit）
 - Ladyland は midistage の置き場を優先し、無ければ従来の `ladyland/gear` にフォールバック。
-  VP は同じ置き場の GLB を読む
+  アプリ B は同じ置き場の GLB を読む
 - 公開リポなので、出典（公式写真・PDF）は URL を metadata に書くだけ。画像を同梱しない
 
 ## 範囲外（別の仕事）
@@ -58,8 +58,8 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 ## 進め方
 
 1. Ladyland PR #36（.blend 8 台 + xtouch.json）が nightly に入るのを待つ
-2. **GLB の spike**: 1 機種（nanokontrol）を Blender の glTF で出し、VP で見る。
-   品質が足りなければ変換経路を変える。ここで schema を固めて VP に返す
+2. **GLB の spike**: 1 機種（nanokontrol）を Blender の glTF で出し、アプリ B で見る。
+   品質が足りなければ変換経路を変える。ここで schema を固めてアプリ B に返す
 3. 移設: gear/<id>/ に JSON と .blend、build.py / check.py、manifest
 4. Ladyland の読み出しを midistage 優先 + フォールバックに
 5. 旧 Ladyland の Gear/ は PR で削除（この handoff では削除しない）
@@ -68,5 +68,5 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 
 - 2026-10-10 起工。Draft
 - 2026-10-10 GLB spike: Blender 5.2.2 の glTF 出力で nanokontrol.blend → nanokontrol.glb（1.43MB、ノード 118、材質 6、画像 1）。
-  **部品名（fader_1 / knob_1 / m_1 / play …）は GLB のノード名にそのまま残る** = USDZ と同じ契約で VP も掴める。
-  見た目の品質は VP（Three.js）側で未確認。spike のスクリプトは `spike-export-glb.py`（build.py に取り込む前の下書き）
+  **部品名（fader_1 / knob_1 / m_1 / play …）は GLB のノード名にそのまま残る** = USDZ と同じ契約でアプリ B も掴める。
+  見た目の品質はアプリ B（Three.js）側で未確認。spike のスクリプトは `spike-export-glb.py`（build.py に取り込む前の下書き）
