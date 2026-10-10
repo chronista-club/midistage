@@ -67,3 +67,6 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 ## Status log
 
 - 2026-10-10 起工。Draft
+- 2026-10-10 GLB spike: Blender 5.2.2 の glTF 出力で nanokontrol.blend → nanokontrol.glb（1.43MB、ノード 118、材質 6、画像 1）。
+  **部品名（fader_1 / knob_1 / m_1 / play …）は GLB のノード名にそのまま残る** = USDZ と同じ契約で VP も掴める。
+  見た目の品質は VP（Three.js）側で未確認。spike のスクリプトは `spike-export-glb.py`（build.py に取り込む前の下書き）
