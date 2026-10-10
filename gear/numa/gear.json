@@ -1,0 +1,949 @@
+{
+  "id": "ncxse",
+  "title": "Numa Compact X SE",
+  "size": [
+    1270,
+    224,
+    100
+  ],
+  "body_height": 55,
+  "corner": 4,
+  "body_color": [
+    0.02,
+    0.02,
+    0.022
+  ],
+  "source": "外形: Studiologic 公式 127 x 23 x 10 cm / 7.1 kg（studiologic-music.com specs）。上から見える奥行きは 224 mm（背面は斜面で真上から見えない）— 上面は写真に合わせた。配置: Studiologic の真上の報道写真（3000 x 3000、0.424 mm/px）を画素で測った。88 鍵 A0-C8（取扱説明書）。段の高さ（鍵盤の床 55 / パネル 72 mm）とノブの高さ、背面のスピーカーの斜面は推定・未再現",
+  "photo": {
+    "file": "ncxse_top.jpg",
+    "mm_per_px": [
+      0.42404,
+      0.42404
+    ],
+    "body_center_px": [
+      1499.5,
+      1505
+    ]
+  },
+  "keybed": {
+    "lowest": 21,
+    "count": 88,
+    "left": -611.68,
+    "front": 93.71,
+    "white_width": 23.53,
+    "white_length": 139.5,
+    "black_width": 13.5,
+    "black_length": 87,
+    "height": 12,
+    "base": 45
+  },
+  "parts": [
+    {
+      "name": "panel_block",
+      "kind": "decor",
+      "center": [
+        -0.42,
+        -79.08
+      ],
+      "size": [
+        1246.3,
+        65.7,
+        17
+      ],
+      "base": 55,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "cheek_left",
+      "kind": "decor",
+      "center": [
+        -629.49,
+        0
+      ],
+      "size": [
+        11.4,
+        224,
+        20
+      ],
+      "base": 55,
+      "color": [
+        0.03,
+        0.03,
+        0.033
+      ]
+    },
+    {
+      "name": "cheek_right",
+      "kind": "decor",
+      "center": [
+        629.28,
+        0
+      ],
+      "size": [
+        11.9,
+        224,
+        20
+      ],
+      "base": 55,
+      "color": [
+        0.03,
+        0.03,
+        0.033
+      ]
+    },
+    {
+      "name": "stick_1_bezel",
+      "kind": "decor",
+      "center": [
+        -557.82,
+        -86.5
+      ],
+      "size": [
+        14,
+        14,
+        1.5
+      ],
+      "base": 72,
+      "color": [
+        0.01,
+        0.01,
+        0.01
+      ]
+    },
+    {
+      "name": "stick_1",
+      "kind": "encoder",
+      "center": [
+        -557.82,
+        -86.5
+      ],
+      "size": [
+        5.5,
+        5.5,
+        12
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.7,
+        0.72
+      ]
+    },
+    {
+      "name": "stick_2_bezel",
+      "kind": "decor",
+      "center": [
+        -498.88,
+        -86.5
+      ],
+      "size": [
+        14,
+        14,
+        1.5
+      ],
+      "base": 72,
+      "color": [
+        0.01,
+        0.01,
+        0.01
+      ]
+    },
+    {
+      "name": "stick_2",
+      "kind": "encoder",
+      "center": [
+        -498.88,
+        -86.5
+      ],
+      "size": [
+        5.5,
+        5.5,
+        12
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.7,
+        0.72
+      ]
+    },
+    {
+      "name": "organ_select",
+      "kind": "button",
+      "center": [
+        -348.77,
+        -64.45
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "percussion",
+      "kind": "button",
+      "center": [
+        -319.94,
+        -88.62
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.03,
+        0.02
+      ]
+    },
+    {
+      "name": "decay",
+      "kind": "button",
+      "center": [
+        -319.94,
+        -64.03
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.03,
+        0.02
+      ]
+    },
+    {
+      "name": "drawbar_1",
+      "kind": "fader",
+      "center": [
+        -283.47,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "drawbar_2",
+      "kind": "fader",
+      "center": [
+        -266.09,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "drawbar_3",
+      "kind": "fader",
+      "center": [
+        -249.12,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_4",
+      "kind": "fader",
+      "center": [
+        -231.74,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_5",
+      "kind": "fader",
+      "center": [
+        -214.78,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_6",
+      "kind": "fader",
+      "center": [
+        -197.39,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_7",
+      "kind": "fader",
+      "center": [
+        -180.43,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_8",
+      "kind": "fader",
+      "center": [
+        -163.04,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "drawbar_9",
+      "kind": "fader",
+      "center": [
+        -146.08,
+        -77.6
+      ],
+      "size": [
+        14,
+        8,
+        10
+      ],
+      "travel": 34,
+      "base": 72
+    },
+    {
+      "name": "edit",
+      "kind": "button",
+      "center": [
+        -109.19,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "store",
+      "kind": "button",
+      "center": [
+        -89.26,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "midi",
+      "kind": "button",
+      "center": [
+        -109.61,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "sound",
+      "kind": "button",
+      "center": [
+        -88.84,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.03,
+        0.02
+      ]
+    },
+    {
+      "name": "lower",
+      "kind": "button",
+      "center": [
+        -60.43,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.03,
+        0.02
+      ]
+    },
+    {
+      "name": "upper",
+      "kind": "button",
+      "center": [
+        -40.5,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "split",
+      "kind": "button",
+      "center": [
+        -12.51,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "oled",
+      "kind": "display",
+      "center": [
+        -50.25,
+        -88.62
+      ],
+      "size": [
+        32.7,
+        17,
+        0.8
+      ],
+      "base": 72
+    },
+    {
+      "name": "navigation",
+      "kind": "encoder",
+      "center": [
+        -12.51,
+        -88.62
+      ],
+      "size": [
+        19.5,
+        19.5,
+        16
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "bank_1",
+      "kind": "button",
+      "center": [
+        18.45,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72,
+      "color": [
+        0.7,
+        0.03,
+        0.02
+      ]
+    },
+    {
+      "name": "bank_2",
+      "kind": "button",
+      "center": [
+        38.38,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_3",
+      "kind": "button",
+      "center": [
+        58.73,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_4",
+      "kind": "button",
+      "center": [
+        79.08,
+        -88.2
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_5",
+      "kind": "button",
+      "center": [
+        18.45,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_6",
+      "kind": "button",
+      "center": [
+        38.38,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_7",
+      "kind": "button",
+      "center": [
+        58.73,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "bank_8",
+      "kind": "button",
+      "center": [
+        79.08,
+        -63.61
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "fxa_upper_lower",
+      "kind": "button",
+      "center": [
+        110.46,
+        -86.93
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "fxb_upper_lower",
+      "kind": "button",
+      "center": [
+        168.13,
+        -87.35
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "fxa_select",
+      "kind": "button",
+      "center": [
+        138.03,
+        -64.03
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "fxb_select",
+      "kind": "button",
+      "center": [
+        195.69,
+        -64.03
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "reverb_select",
+      "kind": "button",
+      "center": [
+        253.79,
+        -64.03
+      ],
+      "size": [
+        11.5,
+        11.5,
+        3
+      ],
+      "base": 72
+    },
+    {
+      "name": "fxa_amount",
+      "kind": "knob",
+      "center": [
+        110.89,
+        -63.61
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "fxb_amount",
+      "kind": "knob",
+      "center": [
+        169.4,
+        -63.61
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "reverb_mix",
+      "kind": "knob",
+      "center": [
+        227.92,
+        -63.61
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "bass",
+      "kind": "knob",
+      "center": [
+        286.44,
+        -88.62
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "treble",
+      "kind": "knob",
+      "center": [
+        316.97,
+        -89.05
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "mastering",
+      "kind": "knob",
+      "center": [
+        286.44,
+        -64.03
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    },
+    {
+      "name": "volume",
+      "kind": "knob",
+      "center": [
+        316.97,
+        -64.03
+      ],
+      "size": [
+        13.6,
+        13.6,
+        14
+      ],
+      "base": 72,
+      "color": [
+        0.9,
+        0.28,
+        0.02
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "ncxse.keys",
+      "kind": "keys",
+      "parts": [
+        "key_21",
+        "key_22",
+        "key_23",
+        "key_24",
+        "key_25",
+        "key_26",
+        "key_27",
+        "key_28",
+        "key_29",
+        "key_30",
+        "key_31",
+        "key_32",
+        "key_33",
+        "key_34",
+        "key_35",
+        "key_36",
+        "key_37",
+        "key_38",
+        "key_39",
+        "key_40",
+        "key_41",
+        "key_42",
+        "key_43",
+        "key_44",
+        "key_45",
+        "key_46",
+        "key_47",
+        "key_48",
+        "key_49",
+        "key_50",
+        "key_51",
+        "key_52",
+        "key_53",
+        "key_54",
+        "key_55",
+        "key_56",
+        "key_57",
+        "key_58",
+        "key_59",
+        "key_60",
+        "key_61",
+        "key_62",
+        "key_63",
+        "key_64",
+        "key_65",
+        "key_66",
+        "key_67",
+        "key_68",
+        "key_69",
+        "key_70",
+        "key_71",
+        "key_72",
+        "key_73",
+        "key_74",
+        "key_75",
+        "key_76",
+        "key_77",
+        "key_78",
+        "key_79",
+        "key_80",
+        "key_81",
+        "key_82",
+        "key_83",
+        "key_84",
+        "key_85",
+        "key_86",
+        "key_87",
+        "key_88",
+        "key_89",
+        "key_90",
+        "key_91",
+        "key_92",
+        "key_93",
+        "key_94",
+        "key_95",
+        "key_96",
+        "key_97",
+        "key_98",
+        "key_99",
+        "key_100",
+        "key_101",
+        "key_102",
+        "key_103",
+        "key_104",
+        "key_105",
+        "key_106",
+        "key_107",
+        "key_108"
+      ]
+    },
+    {
+      "id": "ncxse.drawbars",
+      "kind": "faders",
+      "parts": [
+        "drawbar_1",
+        "drawbar_2",
+        "drawbar_3",
+        "drawbar_4",
+        "drawbar_5",
+        "drawbar_6",
+        "drawbar_7",
+        "drawbar_8",
+        "drawbar_9"
+      ]
+    }
+  ]
+}

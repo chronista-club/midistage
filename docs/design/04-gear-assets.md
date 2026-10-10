@@ -42,8 +42,9 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 
 - git に入れるのは**生成元だけ**（gear.json、.blend、スクリプト、プレビュー PNG）
 - `gear/build.py` が `~/Library/Application Support/midistage/gear/` に書く:
-  `<id>.usdz`（Ladyland）、`<id>.glb`（アプリ B、Web）、`<id>.json`（鍵盤展開済み）、
-  `environment.exr`、`manifest.json`（schema version / 各ファイルの sha256 / 生成元 commit）
+  `<id>.usdz`（Ladyland）、`<id>.glb`（アプリ B、Web）、`<id>.json`（ID を揃え、control を付け、
+  鍵盤展開済み）、`manifest.json`（schema version / 各ファイルの sha256 / 生成元 commit）。
+  環境光（environment.exr）は机・照明の産物なのでアプリ側に残す（§4 範囲外と同じ線）
 - Ladyland は midistage の置き場を優先し、無ければ従来の `ladyland/gear` にフォールバック。
   アプリ B は同じ置き場の GLB を読む
 - 公開リポなので、出典（公式写真・PDF）は URL を metadata に書くだけ。画像を同梱しない
@@ -64,9 +65,31 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 4. Ladyland の読み出しを midistage 優先 + フォールバックに
 5. 旧 Ladyland の Gear/ は PR で削除（この handoff では削除しない）
 
+## 6. 置き場と道具（2026-10-11）
+
+```
+gear/
+  gearlib.py      意味の層の純粋関数（ID を揃える / control の対応 / 鍵盤展開 / manifest）
+  build.py        Blender headless: .blend → usdz + glb + json、manifest
+  check.py        契約の検査（部品名 ⊆ .blend、原点・縮尺・回転、外形 ±2 mm。高さは警告）
+  fix_names.py    移設時の 1 回きり: Blender の `.001` 接尾辞を外して部品名に戻す
+  tests/          unittest（Blender 不要）
+  <id>/gear.json  意味の層
+  <id>/<id>.blend 見た目の層（root オブジェクト名は旧 ID のまま = `blend_root`。配布物では ID に直す）
+```
+
+control の対応は profile（device_input.rs）があるものはそれに従う（nanokontrol: S 0-7 / M 8-15 /
+R 16-23 / TRACK 24-25、xtouch: fader 0-7 + master 8、lpd8: pad / knob 0-7）。無いものは
+section の並び順。transport ボタンなど profile が読まない部品には付けない。
+
 ## Status log
 
 - 2026-10-10 起工。Draft
 - 2026-10-10 GLB spike: Blender 5.2.2 の glTF 出力で nanokontrol.blend → nanokontrol.glb（1.43MB、ノード 118、材質 6、画像 1）。
   **部品名（fader_1 / knob_1 / m_1 / play …）は GLB のノード名にそのまま残る** = USDZ と同じ契約でアプリ B も掴める。
   見た目の品質はアプリ B（Three.js）側で未確認。spike のスクリプトは `spike-export-glb.py`（build.py に取り込む前の下書き）
+- 2026-10-11 移設。Ladyland の Gear/<id>.json と assets/blender/gear/<id>.blend 8 台を `gear/<id>/` へ
+  （ncxse → numa、fgdp50 → fgdp）。**契約違反を 1 つ見つけて直した**: 8 台が 1 シーンに同居していた頃の
+  Blender の名前衝突で部品が `knob_1.003` 等になっていた（8 台中 7 台、計 206 個）。`fix_names.py` で戻し、
+  `check.py` が 8 台 OK。高さは 4 機種で仕様値より 3〜12 mm 低い（警告として残す）。
+  build.py で 8 台の usdz / glb / json / manifest を出力、GLB の node 名に接尾辞なし・root = ID を確認
