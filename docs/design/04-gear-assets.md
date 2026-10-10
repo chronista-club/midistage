@@ -70,3 +70,4 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 - 2026-10-10 GLB spike: Blender 5.2.2 の glTF 出力で nanokontrol.blend → nanokontrol.glb（1.43MB、ノード 118、材質 6、画像 1）。
   **部品名（fader_1 / knob_1 / m_1 / play …）は GLB のノード名にそのまま残る** = USDZ と同じ契約でアプリ B も掴める。
   見た目の品質はアプリ B（Three.js）側で未確認。spike のスクリプトは `spike-export-glb.py`（build.py に取り込む前の下書き）
+- 2026-10-11 **反転**: 「机・棚・カメラはアプリに残る」のうち、机と棚の配置は midistage の正本に変わる（spec 01 / design 05 の midistage app。`~/Library/Application Support/midistage/desk/<name>.kdl`）。カメラはアプリに残る。`manifest.json` に各 id の `check` 結果を載せる（アプリは検査せず読むだけ）
