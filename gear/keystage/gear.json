@@ -1,0 +1,645 @@
+{
+  "id": "keystage",
+  "title": "Keystage 61",
+  "size": [
+    979,
+    234,
+    82
+  ],
+  "body_height": 38,
+  "corner": 3,
+  "body_color": [
+    0.025,
+    0.025,
+    0.027
+  ],
+  "source": "Keystage 61（mako 2026-10-05「Keystage は 61 鍵盤の方で」）。外形: KORG 取扱説明書（Keystage_om_E2.pdf p.72）979 x 234 x 82 mm / 5.0 kg。配置: korg.com の 61 鍵の真上に近い公式写真（1920 x 642、0.540 mm/px）を画素で測った — パネルの操作子は左端からの距離が 49 鍵版と一致（SETTINGS 127 / VALUE 315 / ノブ 1 352 mm）、違いは鍵盤と画面の帯が右へ伸びることだけ。段の高さ（鍵盤の床 38 / パネル 55 mm）とノブの高さは推定",
+  "photo": {
+    "file": "keystage61_top_korg.png",
+    "mm_per_px": [
+      0.54,
+      0.54
+    ],
+    "body_center_px": [
+      960,
+      328
+    ]
+  },
+  "keybed": {
+    "lowest": 36,
+    "count": 61,
+    "left": -377.45,
+    "front": 116.75,
+    "white_width": 23.44,
+    "white_length": 138,
+    "black_width": 9.4,
+    "black_length": 77,
+    "height": 12,
+    "base": 28
+  },
+  "parts": [
+    {
+      "name": "panel_block",
+      "kind": "decor",
+      "center": [
+        -0.53,
+        -68.86
+      ],
+      "size": [
+        954.2,
+        95.8,
+        17
+      ],
+      "base": 38,
+      "color": [
+        0.025,
+        0.025,
+        0.027
+      ]
+    },
+    {
+      "name": "wheel_block",
+      "kind": "decor",
+      "center": [
+        -429.5,
+        47.08
+      ],
+      "size": [
+        94.8,
+        135.0,
+        8
+      ],
+      "base": 38,
+      "color": [
+        0.025,
+        0.025,
+        0.027
+      ]
+    },
+    {
+      "name": "cheek_left",
+      "kind": "decor",
+      "center": [
+        -483.56,
+        0
+      ],
+      "size": [
+        12.4,
+        234,
+        21
+      ],
+      "base": 38,
+      "color": [
+        0.28,
+        0.15,
+        0.07
+      ]
+    },
+    {
+      "name": "cheek_right",
+      "kind": "decor",
+      "center": [
+        483.04,
+        0
+      ],
+      "size": [
+        12.4,
+        234,
+        21
+      ],
+      "base": 38,
+      "color": [
+        0.28,
+        0.15,
+        0.07
+      ]
+    },
+    {
+      "name": "knob_1",
+      "kind": "knob",
+      "center": [
+        -136.61,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_2",
+      "kind": "knob",
+      "center": [
+        -100.54,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_3",
+      "kind": "knob",
+      "center": [
+        -64.73,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_4",
+      "kind": "knob",
+      "center": [
+        -28.39,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_5",
+      "kind": "knob",
+      "center": [
+        7.68,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_6",
+      "kind": "knob",
+      "center": [
+        43.49,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_7",
+      "kind": "knob",
+      "center": [
+        79.29,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "knob_8",
+      "kind": "knob",
+      "center": [
+        115.36,
+        -80.7
+      ],
+      "size": [
+        14.5,
+        14.5,
+        22
+      ],
+      "base": 55
+    },
+    {
+      "name": "volume",
+      "kind": "knob",
+      "center": [
+        -387.23,
+        -73.17
+      ],
+      "size": [
+        18,
+        18,
+        18
+      ],
+      "base": 55
+    },
+    {
+      "name": "value_dial",
+      "kind": "encoder",
+      "center": [
+        -173.76,
+        -83.66
+      ],
+      "size": [
+        23,
+        23,
+        16
+      ],
+      "base": 55
+    },
+    {
+      "name": "main_display",
+      "kind": "display",
+      "center": [
+        -220.06,
+        -82.58
+      ],
+      "size": [
+        30.7,
+        20.4,
+        0.8
+      ],
+      "base": 55
+    },
+    {
+      "name": "sub_displays",
+      "kind": "display",
+      "center": [
+        163.36,
+        -56.22
+      ],
+      "size": [
+        630.7,
+        11.8,
+        0.8
+      ],
+      "base": 55
+    },
+    {
+      "name": "settings",
+      "kind": "button",
+      "center": [
+        -362.2,
+        -80.7
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "write",
+      "kind": "button",
+      "center": [
+        -347.12,
+        -80.7
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "exit",
+      "kind": "button",
+      "center": [
+        -331.78,
+        -80.7
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "shift",
+      "kind": "button",
+      "center": [
+        -316.7,
+        -80.7
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "arp",
+      "kind": "button",
+      "center": [
+        -276.59,
+        -80.43
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "value_up",
+      "kind": "button",
+      "center": [
+        -252.1,
+        -80.7
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "play",
+      "kind": "button",
+      "center": [
+        -362.2,
+        -56.76
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "stop",
+      "kind": "button",
+      "center": [
+        -347.12,
+        -56.76
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "rec",
+      "kind": "button",
+      "center": [
+        -331.78,
+        -56.76
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "loop",
+      "kind": "button",
+      "center": [
+        -316.7,
+        -56.76
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "tempo",
+      "kind": "button",
+      "center": [
+        -301.36,
+        -56.76
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "chord",
+      "kind": "button",
+      "center": [
+        -276.59,
+        -56.49
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "value_down",
+      "kind": "button",
+      "center": [
+        -252.1,
+        -56.49
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "page_minus",
+      "kind": "button",
+      "center": [
+        -227.87,
+        -56.22
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "page_plus",
+      "kind": "button",
+      "center": [
+        -212.52,
+        -56.22
+      ],
+      "size": [
+        15.0,
+        8.0,
+        3
+      ],
+      "base": 55
+    },
+    {
+      "name": "octave_minus",
+      "kind": "button",
+      "center": [
+        -446.46,
+        -1.35
+      ],
+      "size": [
+        15.6,
+        8,
+        3
+      ],
+      "base": 46
+    },
+    {
+      "name": "octave_plus",
+      "kind": "button",
+      "center": [
+        -411.46,
+        -1.35
+      ],
+      "size": [
+        15.6,
+        8,
+        3
+      ],
+      "base": 46
+    },
+    {
+      "name": "pitch_wheel",
+      "kind": "wheel",
+      "center": [
+        -447.0,
+        51.65
+      ],
+      "size": [
+        16,
+        55,
+        22
+      ],
+      "base": 38
+    },
+    {
+      "name": "mod_wheel",
+      "kind": "wheel",
+      "center": [
+        -411.73,
+        51.65
+      ],
+      "size": [
+        16,
+        55,
+        22
+      ],
+      "base": 38
+    }
+  ],
+  "sections": [
+    {
+      "id": "keystage.keys",
+      "kind": "keys",
+      "parts": [
+        "key_36",
+        "key_37",
+        "key_38",
+        "key_39",
+        "key_40",
+        "key_41",
+        "key_42",
+        "key_43",
+        "key_44",
+        "key_45",
+        "key_46",
+        "key_47",
+        "key_48",
+        "key_49",
+        "key_50",
+        "key_51",
+        "key_52",
+        "key_53",
+        "key_54",
+        "key_55",
+        "key_56",
+        "key_57",
+        "key_58",
+        "key_59",
+        "key_60",
+        "key_61",
+        "key_62",
+        "key_63",
+        "key_64",
+        "key_65",
+        "key_66",
+        "key_67",
+        "key_68",
+        "key_69",
+        "key_70",
+        "key_71",
+        "key_72",
+        "key_73",
+        "key_74",
+        "key_75",
+        "key_76",
+        "key_77",
+        "key_78",
+        "key_79",
+        "key_80",
+        "key_81",
+        "key_82",
+        "key_83",
+        "key_84",
+        "key_85",
+        "key_86",
+        "key_87",
+        "key_88",
+        "key_89",
+        "key_90",
+        "key_91",
+        "key_92",
+        "key_93",
+        "key_94",
+        "key_95",
+        "key_96"
+      ]
+    },
+    {
+      "id": "keystage.knobs",
+      "kind": "knobs",
+      "parts": [
+        "knob_1",
+        "knob_2",
+        "knob_3",
+        "knob_4",
+        "knob_5",
+        "knob_6",
+        "knob_7",
+        "knob_8"
+      ],
+      "ccs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    }
+  ]
+}

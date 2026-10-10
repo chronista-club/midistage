@@ -1,0 +1,378 @@
+{
+  "id": "lpd8",
+  "title": "LPD8 mk2",
+  "size": [
+    306,
+    81,
+    34
+  ],
+  "body_height": 18,
+  "corner": 3,
+  "body_color": [
+    0.03,
+    0.03,
+    0.032
+  ],
+  "source": "外形: AKAI 公式 306 x 81 x 34 mm / 0.39 kg（akaipro.com、User Guide v1.2 p.18）。配置: akaipro.com の真上の公式写真（2400 x 1500）を画素で測った（横 0.1457 / 縦 0.1489 mm/px）。高さの内訳（筐体 18 + ノブ 15）は推定",
+  "photo": {
+    "mm_per_px": [
+      0.14571,
+      0.1489
+    ],
+    "body_center_px": [
+      1196.5,
+      751.5
+    ],
+    "file": "lpd8mk2_top_official_2400x1500.png"
+  },
+  "parts": [
+    {
+      "name": "pad_1",
+      "kind": "pad",
+      "center": [
+        -94.2,
+        17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_5",
+      "kind": "pad",
+      "center": [
+        -94.2,
+        -17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_2",
+      "kind": "pad",
+      "center": [
+        -59.89,
+        17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_6",
+      "kind": "pad",
+      "center": [
+        -59.89,
+        -17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_3",
+      "kind": "pad",
+      "center": [
+        -25.14,
+        17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_7",
+      "kind": "pad",
+      "center": [
+        -25.14,
+        -17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_4",
+      "kind": "pad",
+      "center": [
+        9.33,
+        17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "pad_8",
+      "kind": "pad",
+      "center": [
+        9.33,
+        -17.64
+      ],
+      "size": [
+        28.7,
+        28.9,
+        3.5
+      ]
+    },
+    {
+      "name": "knob_1",
+      "kind": "knob",
+      "center": [
+        44.15,
+        -17.87
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_5",
+      "kind": "knob",
+      "center": [
+        44.15,
+        17.44
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_2",
+      "kind": "knob",
+      "center": [
+        73.44,
+        -17.87
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_6",
+      "kind": "knob",
+      "center": [
+        73.44,
+        17.44
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_3",
+      "kind": "knob",
+      "center": [
+        102.66,
+        -17.87
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_7",
+      "kind": "knob",
+      "center": [
+        102.66,
+        17.44
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_4",
+      "kind": "knob",
+      "center": [
+        131.65,
+        -17.87
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "knob_8",
+      "kind": "knob",
+      "center": [
+        131.65,
+        17.44
+      ],
+      "size": [
+        17.5,
+        17.5,
+        15
+      ]
+    },
+    {
+      "name": "program",
+      "kind": "button",
+      "center": [
+        -139.38,
+        9.9
+      ],
+      "size": [
+        10.9,
+        11.2,
+        3
+      ]
+    },
+    {
+      "name": "note",
+      "kind": "button",
+      "center": [
+        -124.29,
+        9.68
+      ],
+      "size": [
+        10.9,
+        11.2,
+        3
+      ]
+    },
+    {
+      "name": "prog_chng",
+      "kind": "button",
+      "center": [
+        -139.38,
+        25.39
+      ],
+      "size": [
+        10.9,
+        11.2,
+        3
+      ]
+    },
+    {
+      "name": "cc",
+      "kind": "button",
+      "center": [
+        -124.29,
+        25.31
+      ],
+      "size": [
+        10.9,
+        11.2,
+        3
+      ]
+    },
+    {
+      "name": "end_left",
+      "kind": "decor",
+      "center": [
+        -151.7,
+        0
+      ],
+      "size": [
+        2.6,
+        81,
+        0.6
+      ],
+      "base": 17.6,
+      "color": [
+        0.55,
+        0.03,
+        0.03
+      ]
+    },
+    {
+      "name": "end_right",
+      "kind": "decor",
+      "center": [
+        151.7,
+        0
+      ],
+      "size": [
+        2.6,
+        81,
+        0.6
+      ],
+      "base": 17.6,
+      "color": [
+        0.55,
+        0.03,
+        0.03
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "lpd8.pads",
+      "kind": "pads",
+      "parts": [
+        "pad_1",
+        "pad_2",
+        "pad_3",
+        "pad_4",
+        "pad_5",
+        "pad_6",
+        "pad_7",
+        "pad_8"
+      ],
+      "notes_prog1": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47
+      ]
+    },
+    {
+      "id": "lpd8.knobs",
+      "kind": "knobs",
+      "parts": [
+        "knob_1",
+        "knob_2",
+        "knob_3",
+        "knob_4",
+        "knob_5",
+        "knob_6",
+        "knob_7",
+        "knob_8"
+      ],
+      "ccs": [
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86
+      ]
+    }
+  ]
+}
