@@ -124,7 +124,9 @@ struct StatusView: View {
                     TableColumn("機材") { row in
                         Text(row.name).fontWeight(row.tone == .attention ? .semibold : .regular)
                             .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
+                            .help(row.id)
                     }
+                    .width(min: 200, ideal: 260)
                     TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
                         .width(min: 90, ideal: 100)
                     TableColumn("担当", value: \.assignment).width(min: 70, ideal: 90)
