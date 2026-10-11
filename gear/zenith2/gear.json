@@ -1,5 +1,7 @@
 {
  "id": "zenith2",
+ "maker": "Antelope Audio",
+ "model": "Zenith 2",
  "title": "Antelope Audio Zenith 2",
  "size": [
   135.0,
@@ -612,6 +614,5 @@
    "base": 9.9
   }
  ],
- "sections": [],
- "model": "Zenith 2"
+ "sections": []
 }

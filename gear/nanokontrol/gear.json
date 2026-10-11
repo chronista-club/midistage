@@ -1,7 +1,8 @@
 {
  "id": "nanokontrol",
+ "maker": "KORG",
+ "model": "nanoKONTROL2",
  "title": "nanoKONTROL2",
- "model": "KORG nanoKONTROL2",
  "size": [
   325,
   83,

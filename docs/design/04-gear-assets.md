@@ -99,3 +99,4 @@ section の並び順。transport ボタンなど profile が読まない部品�
   見た目の層の生成は Ladyland の `gear_build.py` に `jack`（上面の丸い端子）と `port`（側面の横向き端子、`face` / `solid`）を足して行った
   （生成器の移設はまだ。`check.py` は 2 台 OK、Zenith 2 の高さ 57.8 ≠ 60 は警告）。inventory に `l6max` / `zenith2` を追加。
   `build.py` の目録は `--only` でも全機材を載せるように直した（`--only` で他の 8 台の項が消えていた）
+- 2026-10-12 gear.json に `maker` / `model` を必須に（`model` にメーカー名を重ねない。`gear/tests` で検査）。app の一覧が「メーカー + 機材名」を出す正本（spec 01 REQ-APP-001a）

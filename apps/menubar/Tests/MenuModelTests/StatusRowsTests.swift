@@ -66,3 +66,36 @@ private func facts(_ id: String, present: Bool = true, assigned: String? = "lady
     #expect(rows.map(\.name).contains("Zenith 2（generic:zenith 2）"))
     #expect(rows.map(\.name).contains("Roto-Control"))
 }
+
+@Test func phaseToneFollowsThePhaseWord() {
+    #expect(phaseTone("active") == .active)
+    #expect(phaseTone("waiting") == .waiting)
+    #expect(phaseTone("releasing → vp") == .releasing)
+    #expect(phaseTone("error") == .error)
+    #expect(phaseTone("off") == .off)
+}
+
+@Test func clientIDMatchesTheLastComponentOfABundleID() {
+    #expect(bundleMatchesClient(bundleID: "tech.anycreative.vp", clientID: "vp"))
+    #expect(bundleMatchesClient(bundleID: "club.chronista.ladyland", clientID: "ladyland"))
+    #expect(!bundleMatchesClient(bundleID: "club.chronista.midistage", clientID: "vp"))
+    #expect(!bundleMatchesClient(bundleID: "vp", clientID: "ladyland"))
+}
+
+@Test func rowsSayWhoseAndWhichWhenTheGearJSONKnows() {
+    // mako「ユーザが見たいのは、どこの何か」
+    let rows = statusRows([
+        DeviceFacts(id: "keystage", name: "Keystage", present: true, assignedTo: nil, revision: 0, held: false, phase: "off",
+                    maker: "KORG", model: "Keystage 61"),
+        DeviceFacts(id: "generic:maru", name: "maru", present: true, assignedTo: nil, revision: 0, held: false, phase: "off",
+                    hasGearAsset: false),
+    ])
+    #expect(rows.map(\.name).contains("KORG Keystage 61"))
+    #expect(rows.map(\.name).contains("maru"))
+    let keystage = rows.first { $0.id == "keystage" }!
+    #expect(keystage.maker == "KORG" && keystage.model == "Keystage 61")   // メーカーは別の欄（控えめに描く）
+    let maru = rows.first { $0.id == "generic:maru" }!
+    #expect(maru.maker == nil && maru.model == "maru")
+    #expect(makerAndModel(fromGearJSON: ["maker": "AKAI", "model": "LPD8 mk2"]).maker == "AKAI")
+    #expect(makerAndModel(fromGearJSON: [:]).model == nil)
+}

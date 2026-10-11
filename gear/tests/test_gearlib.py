@@ -120,3 +120,14 @@ class NewGear(unittest.TestCase):
         self.assertEqual(spec["size"], [135.0, 130.0, 60])
         self.assertTrue(all(p["size"][1] <= 0.5 for p in spec["parts"] if p["kind"] == "port"),
                         "端子の突き出しは外形 ±2 mm の検査に収める")
+
+
+class MakerModel(unittest.TestCase):
+    """「どこの何か」（mako 2026-10-12）。maker と model は全機材に要る。app の一覧がこれを出す"""
+
+    def test_every_gear_names_its_maker_and_model(self):
+        for gid in gearlib.GEAR_IDS:
+            spec = gearlib.load(ROOT, gid)
+            self.assertTrue(spec.get("maker"), gid)
+            self.assertTrue(spec.get("model"), gid)
+            self.assertNotIn(spec["maker"], spec["model"], f"{gid}: model にメーカー名を重ねない")

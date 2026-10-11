@@ -37,8 +37,10 @@ public struct ServiceState: Sendable, Equatable {
     public var registration: Registration
     public var running: Running
     public var bundled: Bundled
-    public init(registration: Registration, running: Running, bundled: Bundled) {
-        self.registration = registration; self.running = running; self.bundled = bundled
+    /// 4. アプリ自体をログイン時に起こすか（SMAppService.mainApp）。サービスとは別の登録
+    public var appAtLogin: Bool
+    public init(registration: Registration, running: Running, bundled: Bundled, appAtLogin: Bool = false) {
+        self.registration = registration; self.running = running; self.bundled = bundled; self.appAtLogin = appAtLogin
     }
 }
 
@@ -106,6 +108,10 @@ public func summarize(_ s: ServiceState) -> MenuSummary {
     case .notFound:
         icon = .attention
         lines.append("同梱の LaunchAgent が見つかりません（アプリの不具合）")
+    }
+    if s.registration == .enabled && !s.appAtLogin {
+        // サービスは起きるがアイコンは出ない状態。注意ではなく案内
+        lines.append("ログイン時にこのアプリは起動しません（メニューで有効にできます）")
     }
 
     return MenuSummary(icon: icon, title: title, lines: lines,

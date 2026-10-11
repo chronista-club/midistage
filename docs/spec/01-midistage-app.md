@@ -44,6 +44,7 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 ### ステータス一覧
 
 - REQ-APP-001: 機材ごとに `present` / 担当（assignment）/ 今握っている app（lease の client）/ phase を表示する。情報源は midistaged の snapshot のみ。CoreMIDI を直接見ない
+- REQ-APP-001a: 機材の名前は **メーカー + 機材名**（「KORG Keystage 61」「AKAI LPD8 mk2」）。正本は gear.json の `maker` / `model`（design 04）。メーカーは控えめな色で添え、機材名が主役。資産の無い機材は snapshot の名前のまま。同じ名前が並ぶときは ID を添えて区別する（mako 2026-10-12「ユーザが見たいのは、どこの何か」「メーカーは、控えめの色と表示」）
 - REQ-APP-002: サービスに接続できない（`endpoint.json` が無い、版が違う、epoch が変わった）ときは、機材一覧の前にその事実を出す。黙って空にしない
 - REQ-APP-003: `releasing` が一定時間（design 03 のタイムアウトとは別に、表示上の閾値）続いた機材と、`error` の機材を目立たせる
 - REQ-APP-004: 行を選ぶと、その機材の 3D モデルと gear.json の部品一覧を出す。部品にポインタを乗せると部品名と `control` ID が出る
@@ -74,6 +75,7 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 - REQ-APP-043: ステータス一覧とデスク構築エディターは、メニューから window として開く
 - REQ-APP-044: 配布は署名・公証済みの .app（DMG）。対象は Apple Silicon、macOS 14 以降（`@Observable` の下限。SMAppService / MenuBarExtra は 13 から）
 - REQ-APP-045: midistaged のログは `~/Library/Logs/midistaged/` に置き、メニューから開ける
+- REQ-APP-047: アプリ自体もログイン時に起こせる（`SMAppService.mainApp`）。サービスの常駐とは別の登録で、人がメニューで切り替える。サービスが常駐しているのにアプリが起動しない設定なら、注意ではなく案内として一言出す（mako 2026-10-12「両方やろう」）
 - REQ-APP-046: 開発用の midistaged（`cargo run -p midistaged -- serve`）と同梱版が同時に起動したら、`runtime.lock` で後から来た方が退く。アプリはどちらが動いているか（同梱版か、別のバイナリか）を表示する
 
 ### 共通

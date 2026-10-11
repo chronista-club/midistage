@@ -25,6 +25,17 @@ struct MidistageApp: App {
     }
 }
 
+/// phase の点の色（mako「Phase はポイントと色で表してもいいね」）
+func phaseColor(_ tone: PhaseTone) -> Color {
+    switch tone {
+    case .active: return .green
+    case .waiting: return .yellow
+    case .releasing: return .orange
+    case .error: return .red
+    case .off: return Color.secondary.opacity(0.5)
+    }
+}
+
 extension Icon {
     var symbol: String {
         switch self {
@@ -37,7 +48,7 @@ extension Icon {
 
 @MainActor @Observable
 final class AppModel {
-    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled())
+    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
     var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
@@ -58,7 +69,7 @@ final class AppModel {
     func refresh() async {
         let result = await probe.probe()
         rows = statusRows(result.devices)
-        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled())
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
@@ -91,6 +102,11 @@ struct MenuContent: View {
         } else {
             Button("常駐を有効にする") { model.act(Residency.enable) }
         }
+        if model.state.appAtLogin {
+            Button("ログイン時にアプリを起動しない") { model.act(Residency.disableAppAtLogin) }
+        } else {
+            Button("ログイン時にアプリも起動する") { model.act(Residency.enableAppAtLogin) }
+        }
         Divider()
         Button("ステータスを開く") { openWindow(id: "status"); NSApp.activate(ignoringOtherApps: true) }
         Button("ログを開く") {
@@ -122,16 +138,28 @@ struct StatusView: View {
             } else {
                 Table(model.rows) {
                     TableColumn("機材") { row in
-                        Text(row.name).fontWeight(row.tone == .attention ? .semibold : .regular)
-                            .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
-                            .help(row.id)
+                        // メーカー + 機材名。メーカーは控えめ（mako「メーカーは、控えめの色と表示」）
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            if let maker = row.maker {
+                                Text(maker).font(.caption).foregroundStyle(.tertiary)
+                            }
+                            Text(row.model).fontWeight(row.tone == .attention ? .semibold : .regular)
+                                .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
+                        }
+                        .help(row.id)
                     }
-                    .width(min: 200, ideal: 260)
+                    .width(min: 180, ideal: 230)
                     TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
                         .width(min: 90, ideal: 100)
-                    TableColumn("担当", value: \.assignment).width(min: 70, ideal: 90)
-                    TableColumn("握っている", value: \.holder).width(min: 70, ideal: 90)
-                    TableColumn("phase", value: \.phase).width(min: 90, ideal: 130)
+                    TableColumn("担当") { row in AppLabel(name: row.assignment) }.width(min: 90, ideal: 120)
+                    TableColumn("握っている") { row in AppLabel(name: row.holder) }.width(min: 90, ideal: 120)
+                    TableColumn("phase") { row in
+                        HStack(spacing: 6) {
+                            Circle().fill(phaseColor(phaseTone(row.phase))).frame(width: 8, height: 8)
+                            Text(row.phase)
+                        }
+                    }
+                    .width(min: 110, ideal: 150)
                     TableColumn("注意") { row in
                         Text(row.note ?? "").foregroundStyle(row.tone == .attention ? Color.orange : Color.secondary)
                             .help(row.note ?? "")
@@ -142,5 +170,18 @@ struct StatusView: View {
         }
         .padding(16)
         .frame(minWidth: 640, minHeight: 320, alignment: .topLeading)
+    }
+}
+
+/// app 名の左にアイコン（引けたときだけ）。「なし」「—」「この画面」は文字のまま
+struct AppLabel: View {
+    var name: String
+    var body: some View {
+        HStack(spacing: 5) {
+            if let icon = AppIcons.shared.icon(for: name), !["なし", "—", "この画面", "？"].contains(name) {
+                Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+            }
+            Text(name)
+        }
     }
 }
