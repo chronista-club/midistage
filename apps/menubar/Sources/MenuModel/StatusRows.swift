@@ -88,3 +88,16 @@ public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
         return a.name < b.name
     }
 }
+
+/// phase の見せ方（mako 2026-10-12「Phase はポイントと色で表してもいいね」）。色の名前は画面が決める
+public enum PhaseTone: Sendable, Equatable { case off, waiting, active, releasing, error }
+
+public func phaseTone(_ phase: String) -> PhaseTone {
+    switch phase {
+    case "active": return .active
+    case "waiting": return .waiting
+    case "error": return .error
+    default:
+        return phase.hasPrefix("releasing") ? .releasing : .off
+    }
+}

@@ -66,3 +66,11 @@ private func facts(_ id: String, present: Bool = true, assigned: String? = "lady
     #expect(rows.map(\.name).contains("Zenith 2（generic:zenith 2）"))
     #expect(rows.map(\.name).contains("Roto-Control"))
 }
+
+@Test func phaseToneFollowsThePhaseWord() {
+    #expect(phaseTone("active") == .active)
+    #expect(phaseTone("waiting") == .waiting)
+    #expect(phaseTone("releasing → vp") == .releasing)
+    #expect(phaseTone("error") == .error)
+    #expect(phaseTone("off") == .off)
+}

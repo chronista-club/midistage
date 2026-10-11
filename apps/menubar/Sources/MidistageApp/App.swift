@@ -25,6 +25,17 @@ struct MidistageApp: App {
     }
 }
 
+/// phase の点の色（mako「Phase はポイントと色で表してもいいね」）
+func phaseColor(_ tone: PhaseTone) -> Color {
+    switch tone {
+    case .active: return .green
+    case .waiting: return .yellow
+    case .releasing: return .orange
+    case .error: return .red
+    case .off: return Color.secondary.opacity(0.5)
+    }
+}
+
 extension Icon {
     var symbol: String {
         switch self {
@@ -136,7 +147,13 @@ struct StatusView: View {
                         .width(min: 90, ideal: 100)
                     TableColumn("担当", value: \.assignment).width(min: 70, ideal: 90)
                     TableColumn("握っている", value: \.holder).width(min: 70, ideal: 90)
-                    TableColumn("phase", value: \.phase).width(min: 90, ideal: 130)
+                    TableColumn("phase") { row in
+                        HStack(spacing: 6) {
+                            Circle().fill(phaseColor(phaseTone(row.phase))).frame(width: 8, height: 8)
+                            Text(row.phase)
+                        }
+                    }
+                    .width(min: 110, ideal: 150)
                     TableColumn("注意") { row in
                         Text(row.note ?? "").foregroundStyle(row.tone == .attention ? Color.orange : Color.secondary)
                             .help(row.note ?? "")
