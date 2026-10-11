@@ -19,8 +19,9 @@ struct MidistageApp: App {
         }
         .menuBarExtraStyle(.menu)
         Window("midistage — ステータス", id: "status") {
-            StatusPlaceholder(model: model)
+            StatusView(model: model)
         }
+        .defaultSize(width: 760, height: 420)
     }
 }
 
@@ -37,6 +38,7 @@ extension Icon {
 @MainActor @Observable
 final class AppModel {
     var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled())
+    var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
     private let probe = ServiceProbe()
@@ -54,8 +56,9 @@ final class AppModel {
     }
 
     func refresh() async {
-        let running = await probe.probe()
-        let next = ServiceState(registration: Residency.registration(), running: running, bundled: Residency.bundled())
+        let result = await probe.probe()
+        rows = statusRows(result.devices)
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled())
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
@@ -99,17 +102,40 @@ struct MenuContent: View {
     }
 }
 
-/// spec 01 のステータス一覧の置き場。今は要約だけ（2 ビューは後から育てる）
-struct StatusPlaceholder: View {
+/// spec 01 のステータス一覧（REQ-APP-001〜003）。挿さっている / 担当 / 握っている / phase を別の列で
+struct StatusView: View {
     var model: AppModel
     var body: some View {
         let s = model.summary
-        VStack(alignment: .leading, spacing: 8) {
-            Text(s.title).font(.headline)
-            ForEach(s.lines, id: \.self) { Text($0) }
-            Text("同梱 midistaged \(model.state.bundled.version)").foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Image(systemName: s.icon.symbol)
+                Text(s.title).font(.headline)
+                Spacer()
+                Text("同梱 midistaged \(model.state.bundled.version)").foregroundStyle(.secondary).font(.caption)
+            }
+            ForEach(s.lines, id: \.self) { Text($0).font(.callout).foregroundStyle(.secondary) }
+            if model.rows.isEmpty {
+                Text(model.state.running == .stopped ? "サービスが停止しているため、機材の状態は分かりません" : "機材の情報を待っています…")
+                    .foregroundStyle(.secondary)
+                Spacer()
+            } else {
+                Table(model.rows) {
+                    TableColumn("機材") { row in
+                        Text(row.name).fontWeight(row.tone == .attention ? .semibold : .regular)
+                            .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
+                    }
+                    TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
+                    TableColumn("担当", value: \.assignment)
+                    TableColumn("握っている", value: \.holder)
+                    TableColumn("phase", value: \.phase)
+                    TableColumn("注意") { row in
+                        Text(row.note ?? "").foregroundStyle(row.tone == .attention ? Color.orange : Color.secondary)
+                    }
+                }
+            }
         }
-        .padding(20)
-        .frame(minWidth: 360, minHeight: 160, alignment: .topLeading)
+        .padding(16)
+        .frame(minWidth: 640, minHeight: 320, alignment: .topLeading)
     }
 }

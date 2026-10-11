@@ -4,24 +4,51 @@ import Foundation
 import MenuModel
 import MidistageClient
 
+struct ProbeResult: Sendable {
+    var running: Running
+    var devices: [DeviceFacts]
+}
+
 actor ServiceProbe {
     private var releasingSince: [String: Date] = [:]
     /// releasing がこれより長く続いたら「止まっている」とみなす（表示上の閾値。design 05）
     let stuckAfter: TimeInterval = 5
 
-    func probe() async -> Running {
+    func probe() async -> ProbeResult {
         let url = Client.defaultEndpointURL
-        guard FileManager.default.fileExists(atPath: url.path) else { return .stopped }
+        guard FileManager.default.fileExists(atPath: url.path) else { return ProbeResult(running: .stopped, devices: []) }
         do {
             let (client, snapshot) = try await Client.connect(
                 endpointURL: url, clientID: "club.chronista.midistage.app",
                 displayName: "midistage", nativeMIDI: false)
             await client.close()
-            return .connected(version: snapshot.service?.version,
-                              executable: snapshot.service?.executable,
-                              devices: summarize(snapshot))
+            let summary = summarize(snapshot)
+            let running = Running.connected(version: snapshot.service?.version,
+                                            executable: snapshot.service?.executable,
+                                            devices: summary)
+            return ProbeResult(running: running, devices: facts(snapshot))
         } catch {
-            return .unreachable(reason: "\(error)")
+            return ProbeResult(running: .unreachable(reason: "\(error)"), devices: [])
+        }
+    }
+
+    /// 3D 資産の有無: design 04 の配布先に <id>.usdz があるか（REQ-APP-011）
+    private func hasAsset(_ id: String) -> Bool {
+        let dist = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/midistage/gear/\(id).usdz")
+        return FileManager.default.fileExists(atPath: dist.path)
+    }
+
+    private func facts(_ snapshot: Snapshot) -> [DeviceFacts] {
+        let now = Date()
+        return snapshot.devices.map { d in
+            let stuck = d.phase == "releasing" && releasingSince[d.deviceID].map { now.timeIntervalSince($0) > stuckAfter } == true
+            return DeviceFacts(
+                id: d.deviceID, name: d.name, present: d.present,
+                assignedTo: d.assignment.clientID, revision: d.assignment.revision,
+                held: d.lease != nil, heldByMe: d.lease?.sessionID == snapshot.sessionID,
+                phase: d.phase, releasingTo: d.releasingTo, error: d.error,
+                releasingStuck: stuck, hasGearAsset: hasAsset(d.profileID))
         }
     }
 
