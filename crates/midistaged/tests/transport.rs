@@ -373,6 +373,32 @@ async fn two_apps_must_confirm_takeover_and_stale_output_is_rejected() {
     service.shutdown().await.unwrap();
 }
 
+/// サーバーは IPv6 と IPv4 の両方の loopback で待つ。Rust SDK は `localhost` に繋ぐが、
+/// club-unison の client は名前解決の最初の候補しか試さないので、IPv6 の無いネットワークでは
+/// 127.0.0.1 に向かう。どちらに向かっても届くこと（mem_1CfrJGkydLLAzFP4RnYwLV）。
+#[tokio::test]
+async fn service_listens_on_both_loopback_families() {
+    let dir = tempfile::tempdir().unwrap();
+    let service = start(dir.path()).await;
+    for host in ["127.0.0.1", "[::1]"] {
+        let transport = QuicClient::builder()
+            .trust_anchors(TrustAnchors::Custom(vec![
+                service.endpoint.certificate_der.clone().into(),
+            ]))
+            .build()
+            .unwrap();
+        let client = ProtocolClient::new(transport);
+        tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            client.connect(&format!("https://{host}:{}", service.endpoint.port)),
+        )
+        .await
+        .unwrap_or_else(|_| panic!("{host}: connect timed out"))
+        .unwrap_or_else(|e| panic!("{host}: {e}"));
+        let channel = client.open_channel(CHANNEL).await.unwrap();
+        drop(channel);
+        client.disconnect().await.unwrap();
+    }
 /// snapshot はサービス自身の版と実行ファイルのパスを持つ（design 05「常駐と配布」）。
 /// メニューバーの app が「同梱版が動いているか、別のバイナリか」「.app を更新したが古い版のままか」を
 /// 表示するために使う。入れ替えは人の操作なので、ここは事実を載せるだけ。
