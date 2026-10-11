@@ -21,7 +21,7 @@ struct MidistageApp: App {
         Window("midistage — ステータス", id: "status") {
             StatusView(model: model)
         }
-        .defaultSize(width: 760, height: 420)
+        .defaultSize(width: 920, height: 480)
     }
 }
 
@@ -126,12 +126,15 @@ struct StatusView: View {
                             .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
                     }
                     TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
-                    TableColumn("担当", value: \.assignment)
-                    TableColumn("握っている", value: \.holder)
-                    TableColumn("phase", value: \.phase)
+                        .width(min: 90, ideal: 100)
+                    TableColumn("担当", value: \.assignment).width(min: 70, ideal: 90)
+                    TableColumn("握っている", value: \.holder).width(min: 70, ideal: 90)
+                    TableColumn("phase", value: \.phase).width(min: 90, ideal: 130)
                     TableColumn("注意") { row in
                         Text(row.note ?? "").foregroundStyle(row.tone == .attention ? Color.orange : Color.secondary)
+                            .help(row.note ?? "")
                     }
+                    .width(min: 220, ideal: 320)
                 }
             }
         }

@@ -54,3 +54,15 @@ private func facts(_ id: String, present: Bool = true, assigned: String? = "lady
     #expect(rows[0].note == "模型なし")
     #expect(rows[0].tone == .normal)
 }
+
+@Test func duplicateNamesCarryTheirIDs() {
+    // 認識前の generic:zenith 2 の登録が settings に残っていると、zenith2 と同名で並ぶ
+    let rows = statusRows([
+        DeviceFacts(id: "zenith2", name: "Zenith 2", present: true, assignedTo: nil, revision: 0, held: false, phase: "off"),
+        DeviceFacts(id: "generic:zenith 2", name: "Zenith 2", present: false, assignedTo: nil, revision: 4, held: false, phase: "off"),
+        DeviceFacts(id: "roto", name: "Roto-Control", present: true, assignedTo: "vp", revision: 1, held: true, phase: "active"),
+    ])
+    #expect(rows.map(\.name).contains("Zenith 2（zenith2）"))
+    #expect(rows.map(\.name).contains("Zenith 2（generic:zenith 2）"))
+    #expect(rows.map(\.name).contains("Roto-Control"))
+}

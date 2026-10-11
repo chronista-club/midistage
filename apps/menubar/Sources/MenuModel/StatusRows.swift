@@ -44,7 +44,10 @@ public struct DeviceRow: Sendable, Equatable, Identifiable {
 }
 
 public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
-    devices.map { d in
+    // 同じ名前が複数あるとき（認識前の generic:<name> の登録が残っている等）は ID を添えて区別する
+    var nameCount: [String: Int] = [:]
+    for d in devices { nameCount[d.name, default: 0] += 1 }
+    return devices.map { d in
         var notes: [String] = []
         var tone: RowTone = .normal
         if d.phase == "error" || d.error != nil {
@@ -69,8 +72,9 @@ public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
             holder = "—"
         }
         let phase = d.phase == "releasing" ? "releasing → \(d.releasingTo ?? "?")" : d.phase
+        let shownName = (nameCount[d.name] ?? 0) > 1 ? "\(d.name)（\(d.id)）" : d.name
         return DeviceRow(
-            id: d.id, name: d.name,
+            id: d.id, name: shownName,
             presence: d.present ? "挿さっている" : "見当たらない",
             assignment: d.assignedTo ?? "なし",
             holder: holder, phase: phase,
