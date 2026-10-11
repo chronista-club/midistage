@@ -15,13 +15,21 @@ public struct DeviceFacts: Sendable, Equatable {
     public var error: String?
     public var releasingStuck: Bool      // releasing が表示上の閾値を超えた（probe が計る）
     public var hasGearAsset: Bool        // 3D 資産の有無（REQ-APP-011）。無ければ「模型なし」
+    public var maker: String?            // gear.json の maker（「どこの」）。資産が無ければ nil
+    public var model: String?            // gear.json の model（「何か」）
     public init(id: String, name: String, present: Bool, assignedTo: String?, revision: UInt64,
                 held: Bool, heldByMe: Bool = false, phase: String, releasingTo: String? = nil,
-                error: String? = nil, releasingStuck: Bool = false, hasGearAsset: Bool = true) {
+                error: String? = nil, releasingStuck: Bool = false, hasGearAsset: Bool = true,
+                maker: String? = nil, model: String? = nil) {
         self.id = id; self.name = name; self.present = present; self.assignedTo = assignedTo
         self.revision = revision; self.held = held; self.heldByMe = heldByMe; self.phase = phase
         self.releasingTo = releasingTo; self.error = error; self.releasingStuck = releasingStuck
-        self.hasGearAsset = hasGearAsset
+        self.hasGearAsset = hasGearAsset; self.maker = maker; self.model = model
+    }
+    /// 一覧に出す名前: 「KORG Keystage 61」のように どこの何か。gear.json が無ければ snapshot の名前
+    public var displayName: String {
+        if let maker, let model { return "\(maker) \(model)" }
+        return model ?? name
     }
 }
 
@@ -33,7 +41,9 @@ public enum RowTone: Sendable, Equatable {
 /// 一覧の 1 行。文言はここで決める（画面は並べるだけ）
 public struct DeviceRow: Sendable, Equatable, Identifiable {
     public var id: String
-    public var name: String
+    public var name: String          // 並べ替え・重複判定用の全体名（maker + model、重複時は ID 付き）
+    public var maker: String?        // 控えめに添える「どこの」（mako 2026-10-12）
+    public var model: String         // 主役の「何か」（重複時は ID 付き）
     public var presence: String      // 挿さっている / 見当たらない
     public var assignment: String    // 担当 app / なし
     public var holder: String        // 握っている app の表現
@@ -46,7 +56,7 @@ public struct DeviceRow: Sendable, Equatable, Identifiable {
 public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
     // 同じ名前が複数あるとき（認識前の generic:<name> の登録が残っている等）は ID を添えて区別する
     var nameCount: [String: Int] = [:]
-    for d in devices { nameCount[d.name, default: 0] += 1 }
+    for d in devices { nameCount[d.displayName, default: 0] += 1 }
     return devices.map { d in
         var notes: [String] = []
         var tone: RowTone = .normal
@@ -72,9 +82,11 @@ public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
             holder = "—"
         }
         let phase = d.phase == "releasing" ? "releasing → \(d.releasingTo ?? "?")" : d.phase
-        let shownName = (nameCount[d.name] ?? 0) > 1 ? "\(d.name)（\(d.id)）" : d.name
+        let dup = (nameCount[d.displayName] ?? 0) > 1
+        let shownName = dup ? "\(d.displayName)（\(d.id)）" : d.displayName
+        let baseModel = d.model ?? d.name
         return DeviceRow(
-            id: d.id, name: shownName,
+            id: d.id, name: shownName, maker: d.maker, model: dup ? "\(baseModel)（\(d.id)）" : baseModel,
             presence: d.present ? "挿さっている" : "見当たらない",
             assignment: d.assignedTo ?? "なし",
             holder: holder, phase: phase,
@@ -87,6 +99,11 @@ public func statusRows(_ devices: [DeviceFacts]) -> [DeviceRow] {
         if (a.presence == "挿さっている") != (b.presence == "挿さっている") { return a.presence == "挿さっている" }
         return a.name < b.name
     }
+}
+
+/// gear.json（配布先の <id>.json）から maker / model を読む。純粋: JSON の辞書 → 2 値
+public func makerAndModel(fromGearJSON json: [String: Any]) -> (maker: String?, model: String?) {
+    (json["maker"] as? String, json["model"] as? String)
 }
 
 /// phase の見せ方（mako 2026-10-12「Phase はポイントと色で表してもいいね」）。色の名前は画面が決める

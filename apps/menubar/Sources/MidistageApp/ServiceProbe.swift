@@ -39,6 +39,15 @@ actor ServiceProbe {
         return FileManager.default.fileExists(atPath: dist.path)
     }
 
+    /// 配布先の <id>.json から maker / model（REQ-APP-001 の「どこの何か」）
+    private func makerModel(_ id: String) -> (String?, String?) {
+        let url = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Application Support/midistage/gear/\(id).json")
+        guard let data = try? Data(contentsOf: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return (nil, nil) }
+        return makerAndModel(fromGearJSON: json)
+    }
+
     private func facts(_ snapshot: Snapshot) -> [DeviceFacts] {
         let now = Date()
         return snapshot.devices.map { d in
@@ -48,7 +57,8 @@ actor ServiceProbe {
                 assignedTo: d.assignment.clientID, revision: d.assignment.revision,
                 held: d.lease != nil, heldByMe: d.lease?.sessionID == snapshot.sessionID,
                 phase: d.phase, releasingTo: d.releasingTo, error: d.error,
-                releasingStuck: stuck, hasGearAsset: hasAsset(d.profileID))
+                releasingStuck: stuck, hasGearAsset: hasAsset(d.profileID),
+                maker: makerModel(d.profileID).0, model: makerModel(d.profileID).1)
         }
     }
 

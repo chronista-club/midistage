@@ -1,5 +1,7 @@
 {
  "id": "l6max",
+ "maker": "ZOOM",
+ "model": "LiveTrak L6max",
  "title": "ZOOM LiveTrak L6max",
  "size": [
   284,
@@ -2306,6 +2308,5 @@
     "sound_pad_4"
    ]
   }
- ],
- "model": "LiveTrak L6max"
+ ]
 }

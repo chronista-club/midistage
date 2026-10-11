@@ -138,11 +138,17 @@ struct StatusView: View {
             } else {
                 Table(model.rows) {
                     TableColumn("機材") { row in
-                        Text(row.name).fontWeight(row.tone == .attention ? .semibold : .regular)
-                            .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
-                            .help(row.id)
+                        // メーカー + 機材名。メーカーは控えめ（mako「メーカーは、控えめの色と表示」）
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            if let maker = row.maker {
+                                Text(maker).font(.caption).foregroundStyle(.tertiary)
+                            }
+                            Text(row.model).fontWeight(row.tone == .attention ? .semibold : .regular)
+                                .foregroundStyle(row.tone == .quiet ? .secondary : .primary)
+                        }
+                        .help(row.id)
                     }
-                    .width(min: 200, ideal: 260)
+                    .width(min: 180, ideal: 230)
                     TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
                         .width(min: 90, ideal: 100)
                     TableColumn("担当") { row in AppLabel(name: row.assignment) }.width(min: 90, ideal: 120)
