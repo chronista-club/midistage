@@ -20,10 +20,17 @@ let bundled = Bundled(version: "0.1.0", executable: "/Applications/midistage.app
 
 @Test func healthyBundledServiceIsNormal() {
     let running = Running.connected(version: "0.1.0", executable: bundled.executable, devices: DeviceSummary(present: 7))
-    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled))
+    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled, appAtLogin: true))
     #expect(s.icon == .normal)
     #expect(s.title.contains("7 台"))
     #expect(s.lines.isEmpty)
+}
+
+@Test func serviceWithoutAppAtLoginGetsAHintNotAnAlarm() {
+    let running = Running.connected(version: "0.1.0", executable: bundled.executable, devices: DeviceSummary(present: 7))
+    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled, appAtLogin: false))
+    #expect(s.icon == .normal)
+    #expect(s.lines == ["ログイン時にこのアプリは起動しません（メニューで有効にできます）"])
 }
 
 @Test func foreignBinaryIsNamedButNotAlarming() {
@@ -45,7 +52,7 @@ let bundled = Bundled(version: "0.1.0", executable: "/Applications/midistage.app
 
 @Test func stuckHandoffAndErrorsAreAttention() {
     let running = Running.connected(version: "0.1.0", executable: bundled.executable, devices: DeviceSummary(present: 3, releasingStuck: 1, errors: 1))
-    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled))
+    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled, appAtLogin: true))
     #expect(s.icon == .attention)
     #expect(s.lines.count == 2)
 }

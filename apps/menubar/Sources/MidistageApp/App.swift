@@ -37,7 +37,7 @@ extension Icon {
 
 @MainActor @Observable
 final class AppModel {
-    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled())
+    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
     var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
@@ -58,7 +58,7 @@ final class AppModel {
     func refresh() async {
         let result = await probe.probe()
         rows = statusRows(result.devices)
-        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled())
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
@@ -90,6 +90,11 @@ struct MenuContent: View {
             Button(s.versionMismatch ? "サービスを再起動（同梱版に入れ替え）" : "サービスを再起動") { model.act(Residency.restart) }
         } else {
             Button("常駐を有効にする") { model.act(Residency.enable) }
+        }
+        if model.state.appAtLogin {
+            Button("ログイン時にアプリを起動しない") { model.act(Residency.disableAppAtLogin) }
+        } else {
+            Button("ログイン時にアプリも起動する") { model.act(Residency.enableAppAtLogin) }
         }
         Divider()
         Button("ステータスを開く") { openWindow(id: "status"); NSApp.activate(ignoringOtherApps: true) }

@@ -31,6 +31,11 @@ enum Residency {
     static func restart() throws { try? agent.unregister(); try agent.register() }
     static func openSettings() { SMAppService.openSystemSettingsLoginItems() }
 
+    /// アプリ自体のログイン時起動（SMAppService.mainApp）。サービスとは別に人が切れる
+    static func appAtLogin() -> Bool { SMAppService.mainApp.status == .enabled }
+    static func enableAppAtLogin() throws { try SMAppService.mainApp.register() }
+    static func disableAppAtLogin() throws { try SMAppService.mainApp.unregister() }
+
     /// 同梱版の事実。版は Info.plist、実行ファイルは .app の中の midistaged
     static func bundled() -> Bundled {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"

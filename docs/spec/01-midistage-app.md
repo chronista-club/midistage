@@ -74,6 +74,7 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 - REQ-APP-043: ステータス一覧とデスク構築エディターは、メニューから window として開く
 - REQ-APP-044: 配布は署名・公証済みの .app（DMG）。対象は Apple Silicon、macOS 14 以降（`@Observable` の下限。SMAppService / MenuBarExtra は 13 から）
 - REQ-APP-045: midistaged のログは `~/Library/Logs/midistaged/` に置き、メニューから開ける
+- REQ-APP-047: アプリ自体もログイン時に起こせる（`SMAppService.mainApp`）。サービスの常駐とは別の登録で、人がメニューで切り替える。サービスが常駐しているのにアプリが起動しない設定なら、注意ではなく案内として一言出す（mako 2026-10-12「両方やろう」）
 - REQ-APP-046: 開発用の midistaged（`cargo run -p midistaged -- serve`）と同梱版が同時に起動したら、`runtime.lock` で後から来た方が退く。アプリはどちらが動いているか（同梱版か、別のバイナリか）を表示する
 
 ### 共通
