@@ -10,13 +10,15 @@ pub struct Service {
     pub endpoint: Endpoint,
     pub runtime: Arc<Mutex<Runtime>>,
     handle: ServerHandle,
+    handle_v4: ServerHandle,
 }
 impl Service {
     pub async fn start(runtime: Runtime) -> anyhow::Result<Self> {
         let epoch = runtime.broker.epoch().to_owned();
         let runtime = Arc::new(Mutex::new(runtime));
         let token = uuid::Uuid::new_v4().to_string();
-        let pair = InternalMeshKeypair::generate(["localhost".into(), "::1".into()])?;
+        let pair =
+            InternalMeshKeypair::generate(["localhost".into(), "::1".into(), "127.0.0.1".into()])?;
         let TrustAnchors::Custom(certs) = pair.client_trust_anchors else {
             unreachable!()
         };
@@ -81,11 +83,40 @@ impl Service {
                 Ok(())
             }
         }).await;
-        let handle = server
-            .listener("[::1]:0")
-            .cert(pair.server_cert_source)
-            .spawn()
-            .await?;
+        // IPv6 と IPv4 の両方の loopback で同じポートを待つ。client（Rust SDK / VP）は `localhost` に
+        // 繋ぎ、unison の client は名前解決の最初の候補しか試さないので、IPv6 の無いネットワークでは
+        // 127.0.0.1 に向かう。[::1]:0 で動的ポートを取り、同じポートを 127.0.0.1 でも bind する。
+        // 取れなければ両方捨てて取り直す（Swift SDK は ::1 固定なので [::1] 側は必ず要る）。
+        let (handle, handle_v4) = {
+            let mut found = None;
+            let mut last_error = None;
+            for _ in 0..8 {
+                let h6 = server
+                    .clone()
+                    .listener("[::1]:0")
+                    .cert(pair.server_cert_source.clone())
+                    .spawn()
+                    .await?;
+                let port = h6.local_addr().port();
+                match server
+                    .clone()
+                    .listener(&format!("127.0.0.1:{port}"))
+                    .cert(pair.server_cert_source.clone())
+                    .spawn()
+                    .await
+                {
+                    Ok(h4) => {
+                        found = Some((h6, h4));
+                        break;
+                    }
+                    Err(e) => {
+                        h6.shutdown().await?;
+                        last_error = Some(e);
+                    }
+                }
+            }
+            found.ok_or_else(|| anyhow::anyhow!("loopback の bind に失敗: {last_error:?}"))?
+        };
         let endpoint = Endpoint {
             protocol_version: PROTOCOL_VERSION,
             port: handle.local_addr().port(),
@@ -97,10 +128,12 @@ impl Service {
             endpoint,
             runtime,
             handle,
+            handle_v4,
         })
     }
     pub async fn shutdown(self) -> anyhow::Result<()> {
         self.handle.shutdown().await?;
+        self.handle_v4.shutdown().await?;
         Ok(())
     }
 }
