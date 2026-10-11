@@ -54,6 +54,16 @@ pub struct DeviceView {
     pub error: Option<String>,
 }
 
+/// サービス自身の事実（design 05「常駐と配布」）。app が「同梱版が動いているか」「.app を更新したが
+/// 古い版のままか」を表示するために使う。入れ替えは人の操作なので、ここは事実を載せるだけ。
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+pub struct ServiceInfo {
+    /// midistaged の crate version（`CARGO_PKG_VERSION`）
+    pub version: String,
+    /// 実行ファイルの絶対パス。取れなければ空
+    pub executable: String,
+}
+
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Snapshot {
     pub sequence: u64,
@@ -61,6 +71,9 @@ pub struct Snapshot {
     pub server_epoch: String,
     pub session_id: String,
     pub devices: Vec<DeviceView>,
+    /// 旧い client / fixture には無いので省略可（protocol_version は上げない）
+    #[serde(default)]
+    pub service: ServiceInfo,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

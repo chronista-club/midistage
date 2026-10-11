@@ -399,5 +399,23 @@ async fn service_listens_on_both_loopback_families() {
         drop(channel);
         client.disconnect().await.unwrap();
     }
+/// snapshot はサービス自身の版と実行ファイルのパスを持つ（design 05「常駐と配布」）。
+/// メニューバーの app が「同梱版が動いているか、別のバイナリか」「.app を更新したが古い版のままか」を
+/// 表示するために使う。入れ替えは人の操作なので、ここは事実を載せるだけ。
+#[tokio::test]
+async fn snapshot_reports_service_version_and_executable() {
+    let dir = tempfile::tempdir().unwrap();
+    let service = start(dir.path()).await;
+    let (client, snapshot) =
+        midistage_client::Client::connect(&service.endpoint, hello(&service, "menubar"))
+            .await
+            .unwrap();
+    assert_eq!(snapshot.service.version, env!("CARGO_PKG_VERSION"));
+    assert!(
+        std::path::Path::new(&snapshot.service.executable).is_absolute(),
+        "executable は絶対パス: {}",
+        snapshot.service.executable
+    );
+    client.close().await.unwrap();
     service.shutdown().await.unwrap();
 }

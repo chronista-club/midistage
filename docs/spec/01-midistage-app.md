@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Related**: 起票 `mem_1Cfu4Bg8fsANpHGAoTMhT7`、design 05、design 03（共通サービス）、design 04（機材の 3D 資産）、火花 `mem_1Cfu3gwPdVa818Txp7FqCw`、ヴァーチャルスタジオ UX の GO `mem_1CfmRXq8Nq5sL425AS7AnC`、gear 集約 todo `mem_1CfsvTkUsCc3nJJn9GidaS`
-> **対象**: `apps/midistage-app/`（新規）、`gear/`（design 04）、`~/Library/Application Support/midistage/desk/`
+> **対象**: `apps/menubar/`（新規）、`gear/`（design 04）、`~/Library/Application Support/midistage/desk/`
 
 ## Abstract
 
@@ -72,7 +72,7 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 - REQ-APP-041: midistaged を .app に同梱し、SMAppService で LaunchAgent として登録・解除できる。承認待ち（`requiresApproval`）のときは「システム設定 › ログイン項目」への導線を出す
 - REQ-APP-042: 動いているサービスの入れ替え（再起動）は人の操作。アプリが自動で止めたり差し替えたりしない（design 03 の「アプリはサービスを自動的に入れ替えない」）
 - REQ-APP-043: ステータス一覧とデスク構築エディターは、メニューから window として開く
-- REQ-APP-044: 配布は署名・公証済みの .app（DMG）。対象は Apple Silicon、macOS 13 以降（SMAppService / MenuBarExtra の下限）
+- REQ-APP-044: 配布は署名・公証済みの .app（DMG）。対象は Apple Silicon、macOS 14 以降（`@Observable` の下限。SMAppService / MenuBarExtra は 13 から）
 - REQ-APP-045: midistaged のログは `~/Library/Logs/midistaged/` に置き、メニューから開ける
 - REQ-APP-046: 開発用の midistaged（`cargo run -p midistaged -- serve`）と同梱版が同時に起動したら、`runtime.lock` で後から来た方が退く。アプリはどちらが動いているか（同梱版か、別のバイナリか）を表示する
 

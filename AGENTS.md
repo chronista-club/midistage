@@ -39,7 +39,10 @@ crates/
   midistage-keystage/  # Keystage の設定モデル（設定 CLI 用）
   midistage-cli/       # 設定 CLI `midistage`（計画中）
 clients/swift/         # Swift SDK（MidistageClient、ルートの Package.swift）
+apps/menubar/    # メニューバー app（MenuModel = 純粋層 + MidistageApp）。midistaged を同梱して SMAppService で常駐
+gear/                  # 機材の 3D 資産（gear.json + .blend、build.py / check.py）
 schemas/               # 通信の契約（KDL）
+scripts/build-app.sh   # midistage.app の組立・署名・公証・配布
 ```
 
 wire 型を変えるときは `schemas/midistage.kdl`、`midistage-protocol`、Swift SDK、共通 fixture を同じ PR で更新する。
@@ -52,11 +55,20 @@ mise run test                               # mbx test --workspace
 mise run clippy                             # mbx clippy --workspace --all-targets
 cargo fmt --all -- --check
 scripts/test-sdk-interop.sh                 # Swift SDK と Rust サービスの相互テスト
+(cd apps/menubar && swift test)       # メニューバー app の純粋層（MenuModel）
+scripts/build-app.sh [--install|--run]      # midistage.app を組む（midistaged 同梱、ad-hoc 署名）
 cargo run -p midistaged -- list-ports       # 物理ポートの列挙（何も開かず、何も送らない）
 cargo run -p midistaged -- serve            # サービス起動
 ```
 
 Rust は `rust-toolchain.toml`（rustup）で固定し、mise では管理しない。dev loop の check / test / clippy は mbx 経由、install / release 系は素の cargo のまま。
+
+## Release（尻尾）
+
+`release` スキルの背骨（tag、GitHub Release）のあと、main で `scripts/build-app.sh --publish`
+（Developer ID 署名 + Hardened Runtime → 公証 → staple → DMG → DMG も署名・公証 → Release に添付）。
+初回だけ `xcrun notarytool store-credentials "midistage" …`（対話）。対象は arm64 / macOS 14+。
+常駐（LaunchAgent）の登録はアプリのメニューから人が行う（SMAppService）。design 05「常駐と配布」。
 
 ## サービスの不変条件
 

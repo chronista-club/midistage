@@ -17,6 +17,7 @@ use std::{
 #[derive(Parser)]
 #[command(
     name = "midistaged",
+    version,
     about = "MIDI 機材のアプリ別使用権と接続を管理する共通サービス"
 )]
 struct Args {
@@ -29,6 +30,9 @@ enum Command {
     Serve {
         #[arg(long)]
         state_dir: Option<PathBuf>,
+        /// ログの置き場（既定 ~/Library/Logs/midistaged、日次ローテーション）。stderr にも出す
+        #[arg(long)]
+        log_dir: Option<PathBuf>,
     },
     /// CoreMIDI の物理ポートを列挙する。接続や MIDI 送信は行わない。
     ListPorts,
@@ -36,9 +40,39 @@ enum Command {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
-        .init();
+    // serve だけファイルにも書く。guard は main の終わりまで持つ（drop で flush）
+    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let _log_guard = match &args.command {
+        Command::Serve { log_dir, .. } => {
+            let dir = midistaged::paths::log_dir(home.as_deref(), log_dir.clone())?;
+            std::fs::create_dir_all(&dir)?;
+            let (file, guard) = tracing_appender::non_blocking(tracing_appender::rolling::daily(
+                &dir,
+                "midistaged.log",
+            ));
+            use tracing_subscriber::layer::SubscriberExt;
+            use tracing_subscriber::util::SubscriberInitExt;
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::EnvFilter::try_from_default_env()
+                        .unwrap_or_else(|_| "info".into()),
+                )
+                .with(tracing_subscriber::fmt::layer().with_writer(std::io::stderr))
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .with_ansi(false)
+                        .with_writer(file),
+                )
+                .init();
+            Some(guard)
+        }
+        _ => {
+            tracing_subscriber::fmt()
+                .with_writer(std::io::stderr)
+                .init();
+            None
+        }
+    };
     match args.command {
         Command::ListPorts =>
         {
@@ -57,15 +91,8 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Command::Serve { state_dir } => {
-            let directory = match state_dir {
-                Some(path) => path,
-                None => PathBuf::from(
-                    std::env::var_os("HOME")
-                        .ok_or_else(|| anyhow::anyhow!("HOME is unavailable; pass --state-dir"))?,
-                )
-                .join("Library/Application Support/Midistage"),
-            };
+        Command::Serve { state_dir, .. } => {
+            let directory = midistaged::paths::state_dir(home.as_deref(), state_dir)?;
             let _lock = RuntimeLock::acquire(&directory)?;
             let mut broker = Broker::new(uuid::Uuid::new_v4().to_string());
             for (id, name) in PROFILES {

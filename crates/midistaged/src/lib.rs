@@ -6,3 +6,5 @@ pub mod native;
 pub mod runtime;
 pub mod service;
 pub mod settings;
+
+pub mod paths;

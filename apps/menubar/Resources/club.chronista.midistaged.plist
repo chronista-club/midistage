@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- midistage.app に同梱する LaunchAgent（design 05「midistaged の同梱と LaunchAgent」）。
+         SMAppService.agent(plistName:) が登録する。BundleProgram は .app 相対。
+         ログは midistaged 自身が ~/Library/Logs/midistaged/ に書く（絶対パスをここに書けないため）。 -->
+    <key>Label</key>
+    <string>club.chronista.midistaged</string>
+    <key>BundleProgram</key>
+    <string>Contents/MacOS/midistaged</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>midistaged</string>
+        <string>serve</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <!-- crash だけ再起動。runtime.lock が取れず正常終了したときは起こし直さない -->
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <!-- MIDI の遅延を省電力で絞らせない -->
+    <key>ProcessType</key>
+    <string>Interactive</string>
+    <key>AssociatedBundleIdentifiers</key>
+    <array>
+        <string>club.chronista.midistage</string>
+    </array>
+</dict>
+</plist>

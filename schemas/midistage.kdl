@@ -1,4 +1,6 @@
 // 同一ユーザー / 同一 Mac の MIDI 機材利用契約。正典: docs/design/03-runtime-service.md
+// snapshot（type="json"）の形は crates/midistage-protocol/src/wire.rs の Snapshot が正。
+// 2026-10-11: `service { version, executable }` を追加（省略可。design 05「常駐と配布」）。
 protocol "midistage" version="1.0.0" {
     namespace "club.chronista.midistage"
     channel "midistage" from="client" lifetime="persistent" {

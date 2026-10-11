@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Related**: spec 01、起票 `mem_1Cfu4Bg8fsANpHGAoTMhT7`、design 03、design 04、火花 `mem_1Cfu3gwPdVa818Txp7FqCw`
-> **対象**: `apps/midistage-app/`、`schemas/desk.kdl`、`gear/`
+> **対象**: `apps/menubar/`、`schemas/desk.kdl`、`gear/`
 
 ## Abstract
 
@@ -11,7 +11,7 @@ Swift package のアプリ 1 本（SwiftUI + RealityKit、macOS 13+）。midista
 ## Architecture
 
 ```
-apps/midistage-app/
+apps/menubar/
   Package.swift
   Sources/
     DeskModel/        # 純粋: 机 KDL ↔ 構造、配置の検証、Ladyland desk_layout.json の取り込み
@@ -99,7 +99,7 @@ GUI の 2 ビューより先に、**メニューバーだけの小さな .app** 
 
 ### アプリの形
 
-- `apps/midistage-app/` の executable target `MidistageApp`（SwiftUI）。`MenuBarExtra` で常駐、`Info.plist` に `LSUIElement = true`（Dock に出ない）。window は `Window("ステータス")` / `Window("デスク")` の scene として後から足す
+- `apps/menubar/` の executable target `MidistageApp`（SwiftUI）。ディレクトリ名は SwiftPM の package identity になるので、リポジトリや worktree の名前（`midistage-app` 等）と衝突しない名前にしてある。`MenuBarExtra` で常駐、`Info.plist` に `LSUIElement = true`（Dock に出ない）。window は `Window("ステータス")` / `Window("デスク")` の scene として後から足す
 - メニュー: 状態行（下記）/ 常駐を有効にする・無効にする / サービスを再起動 / ステータスを開く / デスクを開く / ログを開く / 終了
 - 状態行は 3 つの事実の合成（それぞれ別に持ち、潰さない）:
   1. **登録**: `SMAppService.status` — `.enabled` / `.requiresApproval`（システム設定で承認待ち → `SMAppService.openSystemSettingsLoginItems()` への導線）/ `.notRegistered` / `.notFound`
@@ -130,7 +130,7 @@ midistage.app/Contents/
 - `scripts/build-app.sh`（midistage）: `swift build -c release`（MidistageApp）→ `cargo build -p midistaged --release` → バンドル組立（Info.plist は git から版を採る: `CFBundleShortVersionString` = 直近 tag、`CFBundleVersion` = コミット数.短縮ハッシュ）→ **同梱 midistaged を先に `codesign --options runtime`**（ネストした実行ファイルは個別署名が無いと公証で弾かれる）→ 本体と .app を Developer ID + Hardened Runtime で署名 → `--dist` で notarytool 提出・staple・DMG（DMG も署名・公証・staple）→ `--publish` で tag の GitHub Release に添付
 - 署名: `Developer ID Application: Anycreative Inc. (3EQKG4B352)`（手元にある）。notarytool の keychain profile は `midistage`（初回だけ `store-credentials`、対話なので script は代行しない）
 - entitlements: **library validation は外さない**（AU ホストではない。Ladyland が外しているのはプラグインを読むため）。Hardened Runtime の既定のまま
-- 対象: arm64 のみ、macOS 13 以降。Ladyland は 15 だが、midistage app は RealityKit の机を足すときに上げる
+- 対象: arm64 のみ、macOS 14 以降（`@Observable`）。Ladyland は 15 だが、midistage app は RealityKit の机を足すときに上げる
 - release の尻尾: `release` スキルの背骨（tag、GitHub Release）のあと `scripts/build-app.sh --publish`。AGENTS.md に Release 節として書く
 - ad-hoc 署名（Developer ID が無い環境）でも `--install` は動く。SMAppService は ad-hoc でも登録できるが、他の Mac へ配るには公証が要る
 
