@@ -7,13 +7,20 @@ import ServiceManagement
 enum Residency {
     static let plistName = "club.chronista.midistaged.plist"
     static var agent: SMAppService { SMAppService.agent(plistName: plistName) }
+    static var plistExists: Bool {
+        FileManager.default.fileExists(
+            atPath: Bundle.main.bundleURL.appendingPathComponent("Contents/Library/LaunchAgents/\(plistName)").path)
+    }
 
     static func registration() -> Registration {
         switch agent.status {
         case .enabled: return .enabled
         case .requiresApproval: return .requiresApproval
         case .notRegistered: return .notRegistered
-        case .notFound: return .notFound
+        case .notFound:
+            // 一度も登録していないバンドル agent は .notFound を返す（実測 2026-10-11）。
+            // plist がバンドルにあるなら「未登録」。無ければアプリの不具合
+            return plistExists ? .notRegistered : .notFound
         @unknown default: return .notFound
         }
     }

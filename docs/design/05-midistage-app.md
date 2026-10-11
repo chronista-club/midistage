@@ -118,9 +118,9 @@ midistage.app/Contents/
   Info.plist                          # CFBundleIdentifier club.chronista.midistage、LSUIElement
 ```
 
-- plist: `Label club.chronista.midistaged`、`BundleProgram Contents/MacOS/midistaged`（.app 相対。SMAppService の作法）、`ProgramArguments [midistaged, serve]`、`RunAtLoad true`、`KeepAlive { SuccessfulExit = false }`（crash だけ再起動。`runtime.lock` が取れず正常終了したときに起こし直さない）、`ProcessType Interactive`（MIDI の遅延を省電力で絞らせない）
+- plist: `Label club.chronista.midistaged`、`BundleProgram Contents/MacOS/midistaged`（.app 相対。SMAppService の作法）、`ProgramArguments [midistaged, serve]`、`RunAtLoad true`、`KeepAlive { SuccessfulExit = false }`（crash だけ再起動。`runtime.lock` が取れず正常終了したときに起こし直さない — **midistaged は lock が取れなければ exit 0 で退く**。exit 1 だと launchd が 10 秒ごとに起こし直すループになる。実測 2026-10-11）、`ProcessType Interactive`（MIDI の遅延を省電力で絞らせない）
 - **ログは midistaged 自身が書く**（`~/Library/Logs/midistaged/midistaged.log`、日次ローテーション）。同梱 plist は絶対パスを前提にできないので `StandardOutPath` に頼らない。`serve --log-dir` を足す（既定は上記）
-- 登録: `SMAppService.agent(plistName: "club.chronista.midistaged.plist")` の `register()` / `unregister()`。登録は人の操作（メニュー）で、初回起動時に勝手に register しない — 「常駐を有効にする」を押して、承認待ちならシステム設定へ
+- 登録: `SMAppService.agent(plistName: "club.chronista.midistaged.plist")` の `register()` / `unregister()`。**実測（2026-10-11）**: 一度も登録していない同梱 agent の `status` は `.notRegistered` ではなく `.notFound` を返す。plist がバンドルにあれば「未登録」として扱う（無いときだけ不具合）。登録は人の操作（メニュー）で、初回起動時に勝手に register しない — 「常駐を有効にする」を押して、承認待ちならシステム設定へ
 - 入れ替え: .app を差し替えても動いているプロセスは古いまま。メニューの「サービスを再起動」= `unregister()` → `register()`。アプリは版違い（同梱 `midistaged --version` ≠ 稼働中の版）を表示するだけで、自動では止めない（design 03）。稼働中の版を知るため **snapshot か Hello の返事にサービスの版を載せる**（wire 拡張。`schemas/midistage.kdl` / protocol / Swift SDK / fixture を同じ PR で）
 - 開発用の `cargo run -p midistaged -- serve` はそのまま。同梱版と同時なら `runtime.lock` で後着が退く。アプリは `endpoint.json` を書いたプロセスの実行ファイルのパスを snapshot（上の拡張に含める）で見て「同梱版 / 別のバイナリ」を表示する（spec REQ-APP-046）
 - VP の daemon とは別。共通にするのは流儀だけ（label `club.chronista.*`、`~/Library/Logs/<name>/`、メニューの「有効 / 無効 / 再起動」の語）
