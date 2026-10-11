@@ -145,8 +145,8 @@ struct StatusView: View {
                     .width(min: 200, ideal: 260)
                     TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
                         .width(min: 90, ideal: 100)
-                    TableColumn("担当", value: \.assignment).width(min: 70, ideal: 90)
-                    TableColumn("握っている", value: \.holder).width(min: 70, ideal: 90)
+                    TableColumn("担当") { row in AppLabel(name: row.assignment) }.width(min: 90, ideal: 120)
+                    TableColumn("握っている") { row in AppLabel(name: row.holder) }.width(min: 90, ideal: 120)
                     TableColumn("phase") { row in
                         HStack(spacing: 6) {
                             Circle().fill(phaseColor(phaseTone(row.phase))).frame(width: 8, height: 8)
@@ -164,5 +164,18 @@ struct StatusView: View {
         }
         .padding(16)
         .frame(minWidth: 640, minHeight: 320, alignment: .topLeading)
+    }
+}
+
+/// app 名の左にアイコン（引けたときだけ）。「なし」「—」「この画面」は文字のまま
+struct AppLabel: View {
+    var name: String
+    var body: some View {
+        HStack(spacing: 5) {
+            if let icon = AppIcons.shared.icon(for: name), !["なし", "—", "この画面", "？"].contains(name) {
+                Image(nsImage: icon).resizable().frame(width: 16, height: 16)
+            }
+            Text(name)
+        }
     }
 }

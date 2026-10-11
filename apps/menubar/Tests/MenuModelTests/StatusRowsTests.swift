@@ -74,3 +74,10 @@ private func facts(_ id: String, present: Bool = true, assigned: String? = "lady
     #expect(phaseTone("error") == .error)
     #expect(phaseTone("off") == .off)
 }
+
+@Test func clientIDMatchesTheLastComponentOfABundleID() {
+    #expect(bundleMatchesClient(bundleID: "tech.anycreative.vp", clientID: "vp"))
+    #expect(bundleMatchesClient(bundleID: "club.chronista.ladyland", clientID: "ladyland"))
+    #expect(!bundleMatchesClient(bundleID: "club.chronista.midistage", clientID: "vp"))
+    #expect(!bundleMatchesClient(bundleID: "vp", clientID: "ladyland"))
+}

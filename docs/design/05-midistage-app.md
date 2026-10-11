@@ -142,7 +142,7 @@ midistage.app/Contents/
 
 ## 未決
 
-- 表示名（display_name）・サービスの版・実行ファイルのパスを snapshot に載せる wire 拡張（design 03 側）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で
+- 表示名（display_name）と **bundle id** を snapshot の担当 / lease に載せる wire 拡張（design 03 側）。今は client_id と bundle id の末尾一致（`vp` ↔ `tech.anycreative.vp`）でアイコンを引いている（`AppIcons`）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で
 - 机の KDL に「棚の段数」などの家具テンプレートを持つか（最初は surface の列挙だけ）
 - VP の Devices 面の 3D 表示（`mem_1CfsA67B5KTNTQgChBcFbM`）との関係。VP は自分の面を持ち続け、資産と机は midistage から読む、で揃える
 

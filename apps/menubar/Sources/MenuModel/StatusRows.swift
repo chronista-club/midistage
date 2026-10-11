@@ -101,3 +101,11 @@ public func phaseTone(_ phase: String) -> PhaseTone {
         return phase.hasPrefix("releasing") ? .releasing : .off
     }
 }
+
+/// 担当 app のアイコンを引くための対応（mako 2026-10-12「担当はアプリアイコンも隣に表示できないかな？」）。
+/// client_id（`vp` / `ladyland`）は bundle id の末尾（`tech.anycreative.vp` / `club.chronista.ladyland`）と
+/// 一致するので、名前を埋め込まずに照合できる。正しくは wire で bundle id を運ぶ（design 05 未決）
+public func bundleMatchesClient(bundleID: String, clientID: String) -> Bool {
+    let last = bundleID.split(separator: ".").last.map(String.init) ?? bundleID
+    return last.lowercased() == clientID.lowercased()
+}
