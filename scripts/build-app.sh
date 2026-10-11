@@ -14,7 +14,7 @@
 # 署名: Developer ID があれば Hardened Runtime で署名（公証に出せる）、無ければ ad-hoc。
 # 同梱 midistaged（ネストした実行ファイル）は先に個別署名する — 公証はこれが無いと弾く。
 # entitlements は付けない（AU ホストではないので library validation を外す理由が無い）。
-# 公証の資格情報は一度だけ（対話なのでここでは代行しない）:
+# 公証の資格情報は Team 単位。"midistage" か "ladyland" の keychain profile があればそれを使う。無ければ一度だけ（対話）:
 #   xcrun notarytool store-credentials "midistage" --apple-id <Apple ID> --team-id 3EQKG4B352 --password <アプリ用パスワード>
 # 対象は arm64 / macOS 14 以降。
 set -euo pipefail
@@ -23,7 +23,16 @@ APP_PKG="$REPO_ROOT/apps/menubar"
 DIST="$REPO_ROOT/dist"
 APP="$DIST/midistage.app"
 CONTENTS="$APP/Contents"
-NOTARY_PROFILE="${MIDISTAGE_NOTARY_PROFILE:-midistage}"
+# 公証の資格情報は Apple ID / Team 単位でアプリごとではない。Ladyland で登録した "ladyland" が
+# 同じ Team（3EQKG4B352）なので、"midistage" が無ければそれを使う（2026-10-12 実測）
+notary_profile() {
+    if [ -n "${MIDISTAGE_NOTARY_PROFILE:-}" ]; then echo "$MIDISTAGE_NOTARY_PROFILE"; return; fi
+    for p in midistage ladyland; do
+        if xcrun notarytool history --keychain-profile "$p" >/dev/null 2>&1; then echo "$p"; return; fi
+    done
+    echo "midistage"
+}
+NOTARY_PROFILE=""
 BUNDLE_ID="club.chronista.midistage"
 AGENT_PLIST="club.chronista.midistaged.plist"
 INSTALL=0; RUN=0; MAKE_DIST=0; PUBLISH=0
@@ -105,6 +114,8 @@ echo "==> できました: $APP (${SHORT_VERSION} / ${BUILD_VERSION})"
 
 if [ "$MAKE_DIST" = "1" ]; then
     [ -n "$IDENTITY" ] || { echo "配布には Developer ID 署名が必要です" >&2; exit 1; }
+    NOTARY_PROFILE="$(notary_profile)"
+    echo "==> 公証プロファイル: $NOTARY_PROFILE"
     if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
         echo "公証の資格情報 \"$NOTARY_PROFILE\" が未登録です。一度だけ:" >&2
         echo "  xcrun notarytool store-credentials \"$NOTARY_PROFILE\" --apple-id <Apple ID> --team-id 3EQKG4B352 --password <アプリ用パスワード>" >&2
