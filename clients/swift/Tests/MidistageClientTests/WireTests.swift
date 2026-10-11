@@ -68,3 +68,19 @@ import Testing
     #expect(revoked.wait(timeout: .now() + 2) == .success)
     #expect(!access.withInput(active.devices[0].nativeInputs[0]) {})
 }
+
+@Test func snapshotCarriesServiceVersionAndExecutable() throws {
+    let url = Bundle.module.url(forResource: "snapshot", withExtension: "json", subdirectory: "Fixtures")!
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: url))
+    #expect(snapshot.service?.version == "0.0.1")
+    #expect(snapshot.service?.executable == "/Applications/midistage.app/Contents/MacOS/midistaged")
+}
+@Test func snapshotWithoutServiceStillDecodes() throws {
+    // 旧いサービス（service を載せない版）の snapshot も読める。protocol_version は変えていない
+    let url = Bundle.module.url(forResource: "snapshot", withExtension: "json", subdirectory: "Fixtures")!
+    var json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as! [String: Any]
+    json.removeValue(forKey: "service")
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: JSONSerialization.data(withJSONObject: json))
+    #expect(snapshot.service == nil)
+    #expect(snapshot.devices.count == 2)
+}

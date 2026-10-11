@@ -40,14 +40,21 @@ public struct DeviceView: Codable, Sendable, Equatable, Identifiable {
         case releasingTo = "releasing_to", controls, nativePorts = "native_ports", error
     }
 }
+/// サービス自身の版と実行ファイル（design 05「常駐と配布」）。旧いサービスには無い
+public struct ServiceInfo: Codable, Sendable, Equatable {
+    public var version: String
+    public var executable: String
+    public init(version: String, executable: String) { self.version = version; self.executable = executable }
+}
 public struct Snapshot: Codable, Sendable, Equatable {
     public var sequence: UInt64
     public var protocolVersion: UInt32
     public var serverEpoch: String
     public var sessionID: String
     public var devices: [DeviceView]
+    public var service: ServiceInfo?
     enum CodingKeys: String, CodingKey {
-        case sequence, protocolVersion = "protocol_version", serverEpoch = "server_epoch", sessionID = "session_id", devices
+        case sequence, protocolVersion = "protocol_version", serverEpoch = "server_epoch", sessionID = "session_id", devices, service
     }
     public func owns(_ device: DeviceView) -> Bool { device.phase == "active" && device.lease?.sessionID == sessionID }
 }

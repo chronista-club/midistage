@@ -105,6 +105,20 @@ impl Service {
     }
 }
 
+/// サービス自身の版と実行ファイル。実行ファイルは一度だけ引く
+fn service_info() -> midistage_protocol::wire::ServiceInfo {
+    static EXECUTABLE: std::sync::OnceLock<String> = std::sync::OnceLock::new();
+    let executable = EXECUTABLE.get_or_init(|| {
+        std::env::current_exe()
+            .map(|p| p.to_string_lossy().into_owned())
+            .unwrap_or_default()
+    });
+    midistage_protocol::wire::ServiceInfo {
+        version: env!("CARGO_PKG_VERSION").into(),
+        executable: executable.clone(),
+    }
+}
+
 pub fn snapshot(runtime: &Runtime, session: &str) -> Snapshot {
     Snapshot {
         sequence: runtime
@@ -113,6 +127,7 @@ pub fn snapshot(runtime: &Runtime, session: &str) -> Snapshot {
         protocol_version: PROTOCOL_VERSION,
         server_epoch: runtime.broker.epoch().into(),
         session_id: session.into(),
+        service: service_info(),
         devices: runtime
             .broker
             .devices

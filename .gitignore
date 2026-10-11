@@ -10,3 +10,7 @@ Cargo.lock.bak
 
 # Vantage Point lane workspaces (repo-local lane refactor)
 .vp/
+
+# midistage.app の組立先と SwiftPM の build（apps/ 配下も）
+/dist
+.build/
