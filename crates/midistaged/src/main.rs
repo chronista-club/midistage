@@ -93,7 +93,18 @@ async fn main() -> anyhow::Result<()> {
         }
         Command::Serve { state_dir, .. } => {
             let directory = midistaged::paths::state_dir(home.as_deref(), state_dir)?;
-            let _lock = RuntimeLock::acquire(&directory)?;
+            // 別の midistaged（開発用の cargo run など）が動いていれば静かに退く。exit 0 なので
+            // launchd の KeepAlive {SuccessfulExit=false} は起こし直さない（design 05）
+            let _lock = match RuntimeLock::acquire(&directory) {
+                Ok(lock) => lock,
+                Err(e) => {
+                    tracing::info!(
+                        "another midistaged holds {}: {e}; exiting",
+                        directory.display()
+                    );
+                    return Ok(());
+                }
+            };
             let mut broker = Broker::new(uuid::Uuid::new_v4().to_string());
             for (id, name) in PROFILES {
                 broker.add_device(id, id, false);

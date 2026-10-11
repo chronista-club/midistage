@@ -3,6 +3,9 @@
 import AppKit
 import MenuModel
 import SwiftUI
+import os
+
+let log = Logger(subsystem: "club.chronista.midistage", category: "menubar")
 
 @main
 struct MidistageApp: App {
@@ -52,7 +55,12 @@ final class AppModel {
 
     func refresh() async {
         let running = await probe.probe()
-        state = ServiceState(registration: Residency.registration(), running: running, bundled: Residency.bundled())
+        let next = ServiceState(registration: Residency.registration(), running: running, bundled: Residency.bundled())
+        if next != state {
+            // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
+            log.info("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
+        }
+        state = next
     }
 
     func act(_ f: () throws -> Void) {
