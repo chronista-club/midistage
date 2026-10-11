@@ -16,7 +16,7 @@ SCHEMA_VERSION = 1
 #: Ladyland 時代の資産 ID → inventory の profile ID
 LEGACY_IDS = {"ncxse": "numa", "fgdp50": "fgdp"}
 
-GEAR_IDS = ["roto", "lpd8", "nanokontrol", "keystage", "numa", "minilab", "fgdp", "xtouch"]
+GEAR_IDS = ["roto", "lpd8", "nanokontrol", "keystage", "numa", "minilab", "fgdp", "xtouch", "l6max", "zenith2"]
 
 #: kind → ControlEvent の種類（既定の対応。section の並び順で index を振る）
 KIND_TO_CONTROL = {"pad": "pad", "knob": "knob", "encoder": "knob", "fader": "fader", "button": "button"}

@@ -21,6 +21,9 @@ pub const PROFILES: &[(&str, &str)] = &[
     ("minilab", "MiniLab"),
     ("fgdp", "FGDP"),
     ("xtouch", "X-Touch"),
+    // 2026-10-11: gear 資産（design 04）と机（spec 01）の ID を inventory で正にするため追加
+    ("l6max", "L6max"),
+    ("zenith2", "Zenith 2"),
 ];
 pub fn inventory(ports: &[Port]) -> BTreeMap<String, DevicePorts> {
     let mut found: BTreeMap<String, DevicePorts> = PROFILES
@@ -114,10 +117,10 @@ mod tests {
         let found = inventory(&[
             port(1, 0, "Midistage/vp/lease | Roto-Control", true),
             port(2, 0, "Ladyland RotoInject", false),
-            port(3, 55, "Zenith 2", true),
+            port(3, 55, "Unknown Box", true),
         ]);
         assert_eq!(found.len(), PROFILES.len() + 1);
-        assert_eq!(found["generic:zenith 2"].ports.len(), 1);
+        assert_eq!(found["generic:unknown box"].ports.len(), 1);
         assert!(
             found
                 .iter()
@@ -125,6 +128,20 @@ mod tests {
                 .map(|(_, d)| d)
                 .all(|d| d.ports.is_empty() && d.error.is_none())
         );
+    }
+    #[test]
+    fn l6max_and_zenith2_are_recognized_by_their_port_names() {
+        // L6max は複数ポート（Mixer Control / MIDI I/O / Editor）、Zenith 2 は 1 ポート。どちらも 1 台
+        let found = inventory(&[
+            port(1, 61, "L6max Mixer Control Port", true),
+            port(2, 61, "L6max Mixer Control Port", false),
+            port(3, 61, "L6max MIDI I/O Port", true),
+            port(4, 62, "Zenith 2", true),
+            port(5, 62, "Zenith 2", false),
+        ]);
+        assert_eq!(found["l6max"].ports.len(), 3);
+        assert_eq!(found["zenith2"].ports.len(), 2);
+        assert!(found.keys().all(|k| !k.starts_with("generic:")));
     }
     #[test]
     fn numa_usb_name_and_xtouch_internal_port_are_recognized() {

@@ -96,3 +96,27 @@ class Manifest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NewGear(unittest.TestCase):
+    """L6max / Zenith 2（2026-10-11 追加）。意味の層だけで読めること"""
+
+    def test_l6max_and_zenith2_are_registered(self):
+        self.assertIn("l6max", gearlib.GEAR_IDS)
+        self.assertIn("zenith2", gearlib.GEAR_IDS)
+
+    def test_l6max_controls_follow_sections(self):
+        c = gearlib.control_map(gearlib.load(ROOT, "l6max"))
+        self.assertEqual(c["encoder_1"], "knob.0")
+        self.assertEqual(c["encoder_8"], "knob.7")
+        self.assertEqual(c["master"], "knob.8")
+        self.assertEqual(c["mute_1"], "button.0")
+        self.assertEqual(c["sound_pad_4"], "pad.3")
+        self.assertNotIn("eq_high", c, "profile が読まない部品には control を付けない")
+
+    def test_zenith2_is_visual_only(self):
+        spec = gearlib.load(ROOT, "zenith2")
+        self.assertEqual(gearlib.control_map(spec), {})
+        self.assertEqual(spec["size"], [135.0, 130.0, 60])
+        self.assertTrue(all(p["size"][1] <= 0.5 for p in spec["parts"] if p["kind"] == "port"),
+                        "端子の突き出しは外形 ±2 mm の検査に収める")
