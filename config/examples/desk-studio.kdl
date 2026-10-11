@@ -1,0 +1,20 @@
+// midistage desk — studio（スタジオ）。design 05 の机スキーマ。単位 mm、x = 右 +、z = 手前 +。
+// ★ たたき台。スタジオの机の寸法と、持っていく機材は mako が決めて直す。
+// 家と違うのは L6max（卓）があること。家の Zenith 2 は無い。
+desk "studio" {
+    footprint center=0 -200 size=1800 1200
+
+    surface "front" center=0 -500 size=1600 800 elevation=740 thickness=40
+    surface "shelf" center=0 -850 size=1400 300 elevation=850 thickness=30
+
+    // 鍵盤は正面
+    gear "keystage" surface="front" pos=0 -300 yaw=0
+    // L6max は棚の中央（X-Touch の位置）。奥行 114 なので棚に収まる
+    gear "l6max" surface="shelf" pos=0 -850 yaw=0
+    // 持ち運ぶ小物
+    gear "nanokontrol" surface="shelf" pos=-450 -850 yaw=0
+    gear "lpd8" surface="shelf" pos=450 -850 yaw=0
+    gear "roto" surface="front" pos=600 -250 yaw=0
+
+    anchor "mixer" surface="shelf" pos=0 -850
+}

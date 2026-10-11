@@ -93,3 +93,4 @@ section の並び順。transport ボタンなど profile が読まない部品�
   Blender の名前衝突で部品が `knob_1.003` 等になっていた（8 台中 7 台、計 206 個）。`fix_names.py` で戻し、
   `check.py` が 8 台 OK。高さは 4 機種で仕様値より 3〜12 mm 低い（警告として残す）。
   build.py で 8 台の usdz / glb / json / manifest を出力、GLB の node 名に接尾辞なし・root = ID を確認
+- 2026-10-11 **反転**: 「机・棚・カメラはアプリに残る」のうち、机と棚の配置は midistage の正本に変わる（spec 01 / design 05 の midistage app。`~/Library/Application Support/midistage/desk/<name>.kdl`）。カメラはアプリに残る。`manifest.json` に各 id の `check` 結果を載せる（アプリは検査せず読むだけ）

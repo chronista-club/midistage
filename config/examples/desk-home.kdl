@@ -1,0 +1,30 @@
+// midistage desk — home（家）。design 05 の机スキーマ。単位 mm、x = 右 +、z = 手前 +。
+// 配置値は Ladyland の desk_layout.json（2026-10 時点、studio.blend から生成）を写した。
+// 機材 ID は midistage inventory の ID（ncxse → numa、fgdp50 → fgdp）。
+// この机にある機材: 2026-10-10 に挿さっていたもの + 家で使う Zenith 2。
+desk "home" {
+    footprint center=-200 -175 size=2050 1790
+
+    surface "front" center=0 -566.5 size=1650 917 elevation=740 thickness=40
+    surface "left-numa" center=-1069 20 size=312 1400 elevation=740 thickness=40
+    surface "low-shelf" center=0 -739.25 size=1560 661.5 elevation=850 thickness=40
+
+    // 正面の下段: 鍵盤
+    gear "keystage" surface="front" pos=0 -225 yaw=0
+    // 左: Numa Compact X SE（横向き）
+    gear "numa" surface="left-numa" pos=-1025 20 yaw=90
+    // 正面上段の棚
+    gear "xtouch" surface="low-shelf" pos=0 -900 yaw=0
+    gear "roto" surface="low-shelf" pos=-430 -960 yaw=0
+    gear "fgdp" surface="low-shelf" pos=-550 -520 yaw=0
+    gear "lpd8" surface="low-shelf" pos=-180 -520 yaw=0
+    gear "nanokontrol" surface="low-shelf" pos=180 -520 yaw=0
+    gear "minilab" surface="low-shelf" pos=550 -520 yaw=0
+    // 家のオーディオインターフェース。鍵盤の右手前（たたき台、位置は要調整）
+    gear "zenith2" surface="front" pos=640 -330 yaw=-15
+    // 自作コントローラ maru（模型なし → 箱で出る）。nanoKONTROL2 の右
+    gear "maru" surface="low-shelf" pos=420 -520 yaw=0
+
+    anchor "mixer" surface="low-shelf" pos=-120 -680
+    anchor "track-knobs" surface="low-shelf" pos=120 -680
+}
