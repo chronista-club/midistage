@@ -66,6 +66,16 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 - REQ-APP-024: Ladyland の `desk_layout.json`（`desk` / `surfaces` / `gear` / `tray`）から一度だけ取り込める。取り込み後の正本は KDL
 - REQ-APP-025: 編集中の机にある機材の状態（REQ-APP-001）を、机の上の機材にも重ねて表示する（担当 app のバッジ、phase の色）
 
+### メニューバーと常駐（mako 裁定 2026-10-11「メニューバーから始めようか」）
+
+- REQ-APP-040: アプリはメニューバーに常駐する（Dock に出ない）。アイコンだけで midistaged の状態が分かる: 稼働中 / 停止 / 未登録・承認待ち / 版違い
+- REQ-APP-041: midistaged を .app に同梱し、SMAppService で LaunchAgent として登録・解除できる。承認待ち（`requiresApproval`）のときは「システム設定 › ログイン項目」への導線を出す
+- REQ-APP-042: 動いているサービスの入れ替え（再起動）は人の操作。アプリが自動で止めたり差し替えたりしない（design 03 の「アプリはサービスを自動的に入れ替えない」）
+- REQ-APP-043: ステータス一覧とデスク構築エディターは、メニューから window として開く
+- REQ-APP-044: 配布は署名・公証済みの .app（DMG）。対象は Apple Silicon、macOS 13 以降（SMAppService / MenuBarExtra の下限）
+- REQ-APP-045: midistaged のログは `~/Library/Logs/midistaged/` に置き、メニューから開ける
+- REQ-APP-046: 開発用の midistaged（`cargo run -p midistaged -- serve`）と同梱版が同時に起動したら、`runtime.lock` で後から来た方が退く。アプリはどちらが動いているか（同梱版か、別のバイナリか）を表示する
+
 ### 共通
 
 - REQ-APP-030: 純粋な計算（配置の検証、KDL ↔ 構造、snapshot → 表示モデル）は I/O を持たない層に置き、テストで固定する。RealityKit / 画面は薄く保つ

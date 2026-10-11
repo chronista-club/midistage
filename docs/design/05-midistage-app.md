@@ -93,12 +93,59 @@ takeover の前提確認: 表示した `assignment.revision` を持ち、送る�
 - 純粋層はユニットテストで固定。RealityKit の見た目はスクリーンショットで mako が確認（実機確認待ちの扱い）
 - midistaged への接続は `crates/midistaged/examples/protocol_fixture.rs` を相手にした結合テスト（Swift SDK の interop テストと同じ型）
 
+## 常駐と配布 — メニューバーから（mako 裁定 2026-10-11、`mem_1Cfuxqjxy6HUi7p7ByQRY4`）
+
+GUI の 2 ビューより先に、**メニューバーだけの小さな .app** を作って常駐と署名・公証を通す。2 ビューはこの .app から window として開く形で後から足す。
+
+### アプリの形
+
+- `apps/midistage-app/` の executable target `MidistageApp`（SwiftUI）。`MenuBarExtra` で常駐、`Info.plist` に `LSUIElement = true`（Dock に出ない）。window は `Window("ステータス")` / `Window("デスク")` の scene として後から足す
+- メニュー: 状態行（下記）/ 常駐を有効にする・無効にする / サービスを再起動 / ステータスを開く / デスクを開く / ログを開く / 終了
+- 状態行は 3 つの事実の合成（それぞれ別に持ち、潰さない）:
+  1. **登録**: `SMAppService.status` — `.enabled` / `.requiresApproval`（システム設定で承認待ち → `SMAppService.openSystemSettingsLoginItems()` への導線）/ `.notRegistered` / `.notFound`
+  2. **稼働**: `endpoint.json` の有無 → SDK で接続（protocol_version / epoch の一致）。繋がらない理由をそのまま出す（spec REQ-APP-002）
+  3. **機材**: snapshot の要約（挿さっている台数、releasing の滞留、error）
+- アイコン: 接続中 = 通常、承認待ち・未登録 = 注意、停止 = 灰、版違い = 注意
+
+### midistaged の同梱と LaunchAgent
+
+```
+midistage.app/Contents/
+  MacOS/MidistageApp                  # SwiftUI（メニューバー）
+  MacOS/midistaged                    # Rust release ビルド（cargo build -p midistaged --release）
+  Library/LaunchAgents/club.chronista.midistaged.plist
+  Resources/AppIcon.icns
+  Info.plist                          # CFBundleIdentifier club.chronista.midistage、LSUIElement
+```
+
+- plist: `Label club.chronista.midistaged`、`BundleProgram Contents/MacOS/midistaged`（.app 相対。SMAppService の作法）、`ProgramArguments [midistaged, serve]`、`RunAtLoad true`、`KeepAlive { SuccessfulExit = false }`（crash だけ再起動。`runtime.lock` が取れず正常終了したときに起こし直さない）、`ProcessType Interactive`（MIDI の遅延を省電力で絞らせない）
+- **ログは midistaged 自身が書く**（`~/Library/Logs/midistaged/midistaged.log`、日次ローテーション）。同梱 plist は絶対パスを前提にできないので `StandardOutPath` に頼らない。`serve --log-dir` を足す（既定は上記）
+- 登録: `SMAppService.agent(plistName: "club.chronista.midistaged.plist")` の `register()` / `unregister()`。登録は人の操作（メニュー）で、初回起動時に勝手に register しない — 「常駐を有効にする」を押して、承認待ちならシステム設定へ
+- 入れ替え: .app を差し替えても動いているプロセスは古いまま。メニューの「サービスを再起動」= `unregister()` → `register()`。アプリは版違い（同梱 `midistaged --version` ≠ 稼働中の版）を表示するだけで、自動では止めない（design 03）。稼働中の版を知るため **snapshot か Hello の返事にサービスの版を載せる**（wire 拡張。`schemas/midistage.kdl` / protocol / Swift SDK / fixture を同じ PR で）
+- 開発用の `cargo run -p midistaged -- serve` はそのまま。同梱版と同時なら `runtime.lock` で後着が退く。アプリは `endpoint.json` を書いたプロセスの実行ファイルのパスを snapshot（上の拡張に含める）で見て「同梱版 / 別のバイナリ」を表示する（spec REQ-APP-046）
+- VP の daemon とは別。共通にするのは流儀だけ（label `club.chronista.*`、`~/Library/Logs/<name>/`、メニューの「有効 / 無効 / 再起動」の語）
+
+### 署名・公証・配布（Ladyland の `scripts/build-app.sh` を写す）
+
+- `scripts/build-app.sh`（midistage）: `swift build -c release`（MidistageApp）→ `cargo build -p midistaged --release` → バンドル組立（Info.plist は git から版を採る: `CFBundleShortVersionString` = 直近 tag、`CFBundleVersion` = コミット数.短縮ハッシュ）→ **同梱 midistaged を先に `codesign --options runtime`**（ネストした実行ファイルは個別署名が無いと公証で弾かれる）→ 本体と .app を Developer ID + Hardened Runtime で署名 → `--dist` で notarytool 提出・staple・DMG（DMG も署名・公証・staple）→ `--publish` で tag の GitHub Release に添付
+- 署名: `Developer ID Application: Anycreative Inc. (3EQKG4B352)`（手元にある）。notarytool の keychain profile は `midistage`（初回だけ `store-credentials`、対話なので script は代行しない）
+- entitlements: **library validation は外さない**（AU ホストではない。Ladyland が外しているのはプラグインを読むため）。Hardened Runtime の既定のまま
+- 対象: arm64 のみ、macOS 13 以降。Ladyland は 15 だが、midistage app は RealityKit の机を足すときに上げる
+- release の尻尾: `release` スキルの背骨（tag、GitHub Release）のあと `scripts/build-app.sh --publish`。AGENTS.md に Release 節として書く
+- ad-hoc 署名（Developer ID が無い環境）でも `--install` は動く。SMAppService は ad-hoc でも登録できるが、他の Mac へ配るには公証が要る
+
+### 実装順（この節を優先。前の「実装順」の 2 以降はこの後）
+
+0. **メニューバー .app**: `MenuBarExtra` + `SMAppService` の登録・解除・状態表示 + 同梱 midistaged + `build-app.sh`（ad-hoc 署名で `--install` まで）。midistaged に `--log-dir` のファイルログ。wire に `service_version` / `executable` を追加
+0b. **署名・公証**: `--dist` / `--publish` を通し、v0.1.0 として DMG を出す（mako の Mac で `--install` → ログイン項目の承認 → 再起動後に常駐しているかを実機確認）
+
 ## 未決
 
-- 表示名（display_name）を snapshot に載せる wire 拡張（design 03 側）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で
+- 表示名（display_name）・サービスの版・実行ファイルのパスを snapshot に載せる wire 拡張（design 03 側）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で
 - 机の KDL に「棚の段数」などの家具テンプレートを持つか（最初は surface の列挙だけ）
 - VP の Devices 面の 3D 表示（`mem_1CfsA67B5KTNTQgChBcFbM`）との関係。VP は自分の面を持ち続け、資産と机は midistage から読む、で揃える
 
 ## Status log
 
 - 2026-10-11 起工。Draft。spec 01 と同時
+- 2026-10-11 常駐と配布の節を追加（メニューバーから。.app 同梱 + SMAppService、署名・公証は Ladyland の build-app.sh を写す）
