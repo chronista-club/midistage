@@ -399,6 +399,9 @@ async fn service_listens_on_both_loopback_families() {
         drop(channel);
         client.disconnect().await.unwrap();
     }
+    service.shutdown().await.unwrap();
+}
+
 /// snapshot はサービス自身の版と実行ファイルのパスを持つ（design 05「常駐と配布」）。
 /// メニューバーの app が「同梱版が動いているか、別のバイナリか」「.app を更新したが古い版のままか」を
 /// 表示するために使う。入れ替えは人の操作なので、ここは事実を載せるだけ。
