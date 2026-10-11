@@ -1,0 +1,738 @@
+{
+  "id": "minilab",
+  "title": "MiniLab mkII",
+  "size": [
+    355,
+    220,
+    50
+  ],
+  "body_height": 26,
+  "corner": 3,
+  "body_color": [
+    0.025,
+    0.025,
+    0.027
+  ],
+  "source": "外形: Arturia 旧製品ページ（Wayback 2022-01-21、minilab-mkii/details）355 x 220 x 50 mm / 1.5 kg（取扱説明書に仕様の章は無い）。配置: Arturia の真上に近い公式写真（1200 x 789、横 0.3675 / 縦 0.3729 mm/px）を画素で測った。25 鍵の一番下の音（C3 = 48）と高さの内訳は推定。配色は Black Edition（mako 2026-10-05「MiniLab mkII は、ブラックの方で」）— Arturia の Black Edition ページ（Wayback 2021-10-23、minilab-mkII-black）の公式画像: 筐体・ノブ・タッチストリップが黒、ボタンが白、パッドは黒地に白い縁、鍵盤は白と黒",
+  "photo": {
+    "file": "minilab_top_arturia.jpg",
+    "mm_per_px": [
+      0.36749,
+      0.37288
+    ],
+    "body_center_px": [
+      596.5,
+      397.5
+    ]
+  },
+  "keybed": {
+    "lowest": 48,
+    "count": 25,
+    "left": -156.37,
+    "front": 101.24,
+    "white_width": 20.83,
+    "white_length": 89.1,
+    "black_width": 11.0,
+    "black_length": 57,
+    "height": 10,
+    "base": 18
+  },
+  "parts": [
+    {
+      "name": "panel_block",
+      "kind": "decor",
+      "center": [
+        0,
+        -48.84
+      ],
+      "size": [
+        355,
+        121.9,
+        6
+      ],
+      "base": 26,
+      "color": [
+        0.025,
+        0.025,
+        0.027
+      ]
+    },
+    {
+      "name": "cheek_left",
+      "kind": "decor",
+      "center": [
+        -166.84,
+        60.97
+      ],
+      "size": [
+        20.9,
+        97.7,
+        6
+      ],
+      "base": 26,
+      "color": [
+        0.025,
+        0.025,
+        0.027
+      ]
+    },
+    {
+      "name": "cheek_right",
+      "kind": "decor",
+      "center": [
+        166.66,
+        60.97
+      ],
+      "size": [
+        21.3,
+        97.7,
+        6
+      ],
+      "base": 26,
+      "color": [
+        0.025,
+        0.025,
+        0.027
+      ]
+    },
+    {
+      "name": "encoder_1",
+      "kind": "knob",
+      "center": [
+        -83.79,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_2",
+      "kind": "knob",
+      "center": [
+        -51.34,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_3",
+      "kind": "knob",
+      "center": [
+        -18.67,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_4",
+      "kind": "knob",
+      "center": [
+        15.14,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_5",
+      "kind": "knob",
+      "center": [
+        46.64,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_6",
+      "kind": "knob",
+      "center": [
+        79.16,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_7",
+      "kind": "knob",
+      "center": [
+        111.57,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_8",
+      "kind": "knob",
+      "center": [
+        144.24,
+        -88.52
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_9",
+      "kind": "knob",
+      "center": [
+        -83.94,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_10",
+      "kind": "knob",
+      "center": [
+        -51.27,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_11",
+      "kind": "knob",
+      "center": [
+        -18.6,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_12",
+      "kind": "knob",
+      "center": [
+        14.04,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_13",
+      "kind": "knob",
+      "center": [
+        46.67,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_14",
+      "kind": "knob",
+      "center": [
+        79.31,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_15",
+      "kind": "knob",
+      "center": [
+        111.98,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "encoder_16",
+      "kind": "knob",
+      "center": [
+        144.28,
+        -57.95
+      ],
+      "size": [
+        16,
+        16,
+        14
+      ],
+      "base": 32,
+      "color": [
+        0.02,
+        0.02,
+        0.022
+      ]
+    },
+    {
+      "name": "pad_1",
+      "kind": "pad",
+      "center": [
+        -83.61,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_2",
+      "kind": "pad",
+      "center": [
+        -51.08,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_3",
+      "kind": "pad",
+      "center": [
+        -18.37,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_4",
+      "kind": "pad",
+      "center": [
+        13.96,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_5",
+      "kind": "pad",
+      "center": [
+        46.86,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_6",
+      "kind": "pad",
+      "center": [
+        79.38,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_7",
+      "kind": "pad",
+      "center": [
+        111.72,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "pad_8",
+      "kind": "pad",
+      "center": [
+        144.06,
+        -25.17
+      ],
+      "size": [
+        25,
+        25.4,
+        3.5
+      ],
+      "base": 32,
+      "color": [
+        0.05,
+        0.05,
+        0.052
+      ]
+    },
+    {
+      "name": "shift",
+      "kind": "button",
+      "center": [
+        -144.98,
+        -93.22
+      ],
+      "size": [
+        16,
+        10.4,
+        3
+      ],
+      "base": 32,
+      "color": [
+        0.78,
+        0.78,
+        0.76
+      ]
+    },
+    {
+      "name": "pad_bank",
+      "kind": "button",
+      "center": [
+        -118.88,
+        -93.03
+      ],
+      "size": [
+        16,
+        10.4,
+        3
+      ],
+      "base": 32,
+      "color": [
+        0.78,
+        0.78,
+        0.76
+      ]
+    },
+    {
+      "name": "oct_minus",
+      "kind": "button",
+      "center": [
+        -144.98,
+        -76.44
+      ],
+      "size": [
+        16,
+        10.4,
+        3
+      ],
+      "base": 32,
+      "color": [
+        0.78,
+        0.78,
+        0.76
+      ]
+    },
+    {
+      "name": "oct_plus",
+      "kind": "button",
+      "center": [
+        -118.88,
+        -76.07
+      ],
+      "size": [
+        16,
+        10.4,
+        3
+      ],
+      "base": 32,
+      "color": [
+        0.78,
+        0.78,
+        0.76
+      ]
+    },
+    {
+      "name": "pitch_strip",
+      "kind": "decor",
+      "center": [
+        -144.98,
+        -34.68
+      ],
+      "size": [
+        17,
+        57,
+        0.6
+      ],
+      "base": 32,
+      "color": [
+        0.035,
+        0.035,
+        0.038
+      ]
+    },
+    {
+      "name": "mod_strip",
+      "kind": "decor",
+      "center": [
+        -119.07,
+        -34.68
+      ],
+      "size": [
+        17,
+        57,
+        0.6
+      ],
+      "base": 32,
+      "color": [
+        0.035,
+        0.035,
+        0.038
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "minilab.keys",
+      "kind": "keys",
+      "parts": [
+        "key_48",
+        "key_49",
+        "key_50",
+        "key_51",
+        "key_52",
+        "key_53",
+        "key_54",
+        "key_55",
+        "key_56",
+        "key_57",
+        "key_58",
+        "key_59",
+        "key_60",
+        "key_61",
+        "key_62",
+        "key_63",
+        "key_64",
+        "key_65",
+        "key_66",
+        "key_67",
+        "key_68",
+        "key_69",
+        "key_70",
+        "key_71",
+        "key_72"
+      ]
+    },
+    {
+      "id": "minilab.encoders",
+      "kind": "knobs",
+      "parts": [
+        "encoder_1",
+        "encoder_2",
+        "encoder_3",
+        "encoder_4",
+        "encoder_5",
+        "encoder_6",
+        "encoder_7",
+        "encoder_8",
+        "encoder_9",
+        "encoder_10",
+        "encoder_11",
+        "encoder_12",
+        "encoder_13",
+        "encoder_14",
+        "encoder_15",
+        "encoder_16"
+      ]
+    },
+    {
+      "id": "minilab.pads",
+      "kind": "pads",
+      "parts": [
+        "pad_1",
+        "pad_2",
+        "pad_3",
+        "pad_4",
+        "pad_5",
+        "pad_6",
+        "pad_7",
+        "pad_8"
+      ]
+    }
+  ]
+}

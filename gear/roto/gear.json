@@ -1,0 +1,489 @@
+{
+  "id": "roto",
+  "title": "ROTO-CONTROL",
+  "size": [
+    341,
+    99,
+    44
+  ],
+  "body_height": 27,
+  "corner": 3.3,
+  "body_color": [
+    0.02,
+    0.02,
+    0.022
+  ],
+  "source": "外形: Melbourne Instruments 公式 341 x 112 x 44 mm / 715 g。⚠️ 真上の公式写真（2400 x 651）では上面は 341 x 約 99 mm（MX キー 19.05 mm 間隔で縮尺を検算）— 上から見える形は写真に合わせた（112 は足や端子込みの可能性、未確認）。高さの内訳（筐体 27 + ノブ 17）は背面写真から",
+  "photo": {
+    "file": "roto_top_hero.png",
+    "mm_per_px": [
+      0.163,
+      0.16337
+    ],
+    "body_center_px": [
+      1197.5,
+      323.5
+    ]
+  },
+  "parts": [
+    {
+      "name": "knob_1",
+      "kind": "knob",
+      "center": [
+        -77.91,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_1",
+      "kind": "display",
+      "center": [
+        -78.08,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_1",
+      "kind": "button",
+      "center": [
+        -77.75,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_2",
+      "kind": "knob",
+      "center": [
+        -45.93,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_2",
+      "kind": "display",
+      "center": [
+        -46.21,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_2",
+      "kind": "button",
+      "center": [
+        -45.64,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_3",
+      "kind": "knob",
+      "center": [
+        -13.69,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_3",
+      "kind": "display",
+      "center": [
+        -14.02,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_3",
+      "kind": "button",
+      "center": [
+        -13.37,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_4",
+      "kind": "knob",
+      "center": [
+        18.46,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_4",
+      "kind": "display",
+      "center": [
+        18.09,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_4",
+      "kind": "button",
+      "center": [
+        18.83,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_5",
+      "kind": "knob",
+      "center": [
+        50.78,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_5",
+      "kind": "display",
+      "center": [
+        50.37,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_5",
+      "kind": "button",
+      "center": [
+        51.18,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_6",
+      "kind": "knob",
+      "center": [
+        83.01,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_6",
+      "kind": "display",
+      "center": [
+        82.48,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_6",
+      "kind": "button",
+      "center": [
+        83.54,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_7",
+      "kind": "knob",
+      "center": [
+        115.24,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_7",
+      "kind": "display",
+      "center": [
+        114.83,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_7",
+      "kind": "button",
+      "center": [
+        115.65,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "knob_8",
+      "kind": "knob",
+      "center": [
+        147.44,
+        -27.36
+      ],
+      "size": [
+        13.2,
+        13.2,
+        17
+      ]
+    },
+    {
+      "name": "lcd_8",
+      "kind": "display",
+      "center": [
+        146.86,
+        4.74
+      ],
+      "size": [
+        21.8,
+        10.8,
+        0.6
+      ]
+    },
+    {
+      "name": "key_8",
+      "kind": "button",
+      "center": [
+        148.01,
+        32.43
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "menu_lcd",
+      "kind": "display",
+      "center": [
+        -130.08,
+        -25.57
+      ],
+      "size": [
+        22,
+        11,
+        0.6
+      ]
+    },
+    {
+      "name": "mode",
+      "kind": "button",
+      "center": [
+        -148.9,
+        -5.64
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "learn",
+      "kind": "button",
+      "center": [
+        -129.51,
+        -5.64
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "func",
+      "kind": "button",
+      "center": [
+        -110.6,
+        -5.64
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "transport",
+      "kind": "button",
+      "center": [
+        -148.9,
+        13.8
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "sel",
+      "kind": "button",
+      "center": [
+        -129.51,
+        13.8
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "lock",
+      "kind": "button",
+      "center": [
+        -110.6,
+        13.8
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "nav_left",
+      "kind": "button",
+      "center": [
+        -148.9,
+        33.0
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    },
+    {
+      "name": "nav_right",
+      "kind": "button",
+      "center": [
+        -110.6,
+        33.0
+      ],
+      "size": [
+        18.0,
+        18.7,
+        9
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "id": "roto.knobs",
+      "kind": "knobs",
+      "parts": [
+        "knob_1",
+        "knob_2",
+        "knob_3",
+        "knob_4",
+        "knob_5",
+        "knob_6",
+        "knob_7",
+        "knob_8"
+      ]
+    },
+    {
+      "id": "roto.keys",
+      "kind": "buttons",
+      "parts": [
+        "key_1",
+        "key_2",
+        "key_3",
+        "key_4",
+        "key_5",
+        "key_6",
+        "key_7",
+        "key_8"
+      ]
+    }
+  ]
+}

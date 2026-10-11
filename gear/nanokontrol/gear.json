@@ -1,0 +1,813 @@
+{
+ "id": "nanokontrol",
+ "title": "nanoKONTROL2",
+ "model": "KORG nanoKONTROL2",
+ "size": [
+  325,
+  83,
+  30
+ ],
+ "body_height": 16,
+ "corner": 2.5,
+ "body_color": [
+  0.02,
+  0.02,
+  0.02
+ ],
+ "source": "KORG 取扱説明書の仕様 325 × 83 × 30 mm。配置は KORG 公式の真上写真（1200 × 800）を画素で測ったトレース（Ladyland Gear3D.swift / nanokontrol.py、2026-10-04）",
+ "parts": [
+  {
+   "name": "track_prev",
+   "kind": "button",
+   "center": [
+    -144.3,
+    -4.3
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "track_next",
+   "kind": "button",
+   "center": [
+    -128.6,
+    -4.3
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "cycle",
+   "kind": "button",
+   "center": [
+    -144.3,
+    10.7
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "marker_set",
+   "kind": "button",
+   "center": [
+    -113.0,
+    10.7
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "marker_prev",
+   "kind": "button",
+   "center": [
+    -97.2,
+    10.7
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "marker_next",
+   "kind": "button",
+   "center": [
+    -81.5,
+    10.7
+   ],
+   "size": [
+    10.8,
+    3,
+    4.6
+   ]
+  },
+  {
+   "name": "rew",
+   "kind": "button",
+   "center": [
+    -144.3,
+    25.9
+   ],
+   "size": [
+    11.4,
+    3,
+    10.9
+   ]
+  },
+  {
+   "name": "ff",
+   "kind": "button",
+   "center": [
+    -128.6,
+    25.9
+   ],
+   "size": [
+    11.4,
+    3,
+    10.9
+   ]
+  },
+  {
+   "name": "stop",
+   "kind": "button",
+   "center": [
+    -113.0,
+    25.9
+   ],
+   "size": [
+    11.4,
+    3,
+    10.9
+   ]
+  },
+  {
+   "name": "play",
+   "kind": "button",
+   "center": [
+    -97.2,
+    25.9
+   ],
+   "size": [
+    11.4,
+    3,
+    10.9
+   ]
+  },
+  {
+   "name": "rec",
+   "kind": "button",
+   "center": [
+    -81.5,
+    25.9
+   ],
+   "size": [
+    11.4,
+    3,
+    10.9
+   ]
+  },
+  {
+   "name": "knob_1",
+   "kind": "knob",
+   "center": [
+    -47.7,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_1",
+   "kind": "button",
+   "center": [
+    -61.2,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_1",
+   "kind": "button",
+   "center": [
+    -61.2,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_1",
+   "kind": "button",
+   "center": [
+    -61.2,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_1",
+   "kind": "fader",
+   "center": [
+    -48.25,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_2",
+   "kind": "knob",
+   "center": [
+    -20.1,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_2",
+   "kind": "button",
+   "center": [
+    -33.6,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_2",
+   "kind": "button",
+   "center": [
+    -33.6,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_2",
+   "kind": "button",
+   "center": [
+    -33.6,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_2",
+   "kind": "fader",
+   "center": [
+    -20.650000000000002,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_3",
+   "kind": "knob",
+   "center": [
+    7.2,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_3",
+   "kind": "button",
+   "center": [
+    -6.3,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_3",
+   "kind": "button",
+   "center": [
+    -6.3,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_3",
+   "kind": "button",
+   "center": [
+    -6.3,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_3",
+   "kind": "fader",
+   "center": [
+    6.6499999999999995,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_4",
+   "kind": "knob",
+   "center": [
+    35.0,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_4",
+   "kind": "button",
+   "center": [
+    21.5,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_4",
+   "kind": "button",
+   "center": [
+    21.5,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_4",
+   "kind": "button",
+   "center": [
+    21.5,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_4",
+   "kind": "fader",
+   "center": [
+    34.45,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_5",
+   "kind": "knob",
+   "center": [
+    62.3,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_5",
+   "kind": "button",
+   "center": [
+    48.8,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_5",
+   "kind": "button",
+   "center": [
+    48.8,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_5",
+   "kind": "button",
+   "center": [
+    48.8,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_5",
+   "kind": "fader",
+   "center": [
+    61.75,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_6",
+   "kind": "knob",
+   "center": [
+    89.9,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_6",
+   "kind": "button",
+   "center": [
+    76.4,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_6",
+   "kind": "button",
+   "center": [
+    76.4,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_6",
+   "kind": "button",
+   "center": [
+    76.4,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_6",
+   "kind": "fader",
+   "center": [
+    89.35000000000001,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_7",
+   "kind": "knob",
+   "center": [
+    117.4,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_7",
+   "kind": "button",
+   "center": [
+    103.9,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_7",
+   "kind": "button",
+   "center": [
+    103.9,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_7",
+   "kind": "button",
+   "center": [
+    103.9,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_7",
+   "kind": "fader",
+   "center": [
+    116.85000000000001,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  },
+  {
+   "name": "knob_8",
+   "kind": "knob",
+   "center": [
+    144.8,
+    -27.3
+   ],
+   "size": [
+    12,
+    13,
+    12
+   ]
+  },
+  {
+   "name": "s_8",
+   "kind": "button",
+   "center": [
+    131.3,
+    -4.3
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "m_8",
+   "kind": "button",
+   "center": [
+    131.3,
+    10.7
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "r_8",
+   "kind": "button",
+   "center": [
+    131.3,
+    25.9
+   ],
+   "size": [
+    8.8,
+    3,
+    8.9
+   ]
+  },
+  {
+   "name": "fader_8",
+   "kind": "fader",
+   "center": [
+    144.25,
+    10.7
+   ],
+   "size": [
+    8.5,
+    9,
+    22
+   ],
+   "travel": 30
+  }
+ ],
+ "sections": [
+  {
+   "id": "nanokontrol.faders",
+   "kind": "faders",
+   "parts": [
+    "fader_1",
+    "fader_2",
+    "fader_3",
+    "fader_4",
+    "fader_5",
+    "fader_6",
+    "fader_7",
+    "fader_8"
+   ],
+   "ccs": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ]
+  },
+  {
+   "id": "nanokontrol.knobs",
+   "kind": "knobs",
+   "parts": [
+    "knob_1",
+    "knob_2",
+    "knob_3",
+    "knob_4",
+    "knob_5",
+    "knob_6",
+    "knob_7",
+    "knob_8"
+   ],
+   "ccs": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23
+   ]
+  },
+  {
+   "id": "nanokontrol.mutes",
+   "kind": "buttons",
+   "parts": [
+    "m_1",
+    "m_2",
+    "m_3",
+    "m_4",
+    "m_5",
+    "m_6",
+    "m_7",
+    "m_8"
+   ],
+   "ccs": [
+    48,
+    49,
+    50,
+    51,
+    52,
+    53,
+    54,
+    55
+   ]
+  },
+  {
+   "id": "nanokontrol.solos",
+   "kind": "buttons",
+   "parts": [
+    "s_1",
+    "s_2",
+    "s_3",
+    "s_4",
+    "s_5",
+    "s_6",
+    "s_7",
+    "s_8"
+   ],
+   "ccs": [
+    32,
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+   ]
+  },
+  {
+   "id": "nanokontrol.recs",
+   "kind": "buttons",
+   "parts": [
+    "r_1",
+    "r_2",
+    "r_3",
+    "r_4",
+    "r_5",
+    "r_6",
+    "r_7",
+    "r_8"
+   ],
+   "ccs": [
+    64,
+    65,
+    66,
+    67,
+    68,
+    69,
+    70,
+    71
+   ]
+  }
+ ]
+}
