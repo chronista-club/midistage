@@ -1,0 +1,617 @@
+{
+ "id": "zenith2",
+ "title": "Antelope Audio Zenith 2",
+ "size": [
+  135.0,
+  130.0,
+  60
+ ],
+ "body_height": 46.5,
+ "corner": 2.5,
+ "body_color": [
+  0.02,
+  0.02,
+  0.022
+ ],
+ "source": "Width 135 mm measured by mako (2026-10-11); depth 130 / height 60 mm from retailer listings (https://www.musicstore.de/en_FR/EUR/ANTELOPE-Zenith-2/art-PCM0018695-000). Top-panel layout from the near-orthographic top photo in the official user manual (https://support.antelopeaudio.com/en/support/solutions/articles/42000116256-zenith-2-user-manual, p.13; 633 px = 135 mm), front/rear/side controls from the manual's panel photos (pp.27-30). Chassis height 46.5 and knob heights are estimates; the chamfered edge of the top plate and the feet are omitted. Not a MIDI controller: visual asset only, no control mapping.",
+ "parts": [
+  {
+   "name": "top_plate",
+   "kind": "pad",
+   "center": [
+    0,
+    0
+   ],
+   "size": [
+    135.0,
+    130.0,
+    0.6
+   ],
+   "color": [
+    0.075,
+    0.105,
+    0.055
+   ],
+   "base": 46.5
+  },
+  {
+   "name": "logo",
+   "kind": "decor",
+   "center": [
+    0.3,
+    -48.4
+   ],
+   "size": [
+    15,
+    15,
+    0.2
+   ],
+   "color": [
+    0.75,
+    0.04,
+    0.03
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "a1",
+   "kind": "knob",
+   "center": [
+    -44.9,
+    -23.9
+   ],
+   "size": [
+    16,
+    16,
+    9
+   ],
+   "color": [
+    0.03,
+    0.03,
+    0.032
+   ]
+  },
+  {
+   "name": "a2",
+   "kind": "knob",
+   "center": [
+    44.7,
+    -23.9
+   ],
+   "size": [
+    16,
+    16,
+    9
+   ],
+   "color": [
+    0.03,
+    0.03,
+    0.032
+   ]
+  },
+  {
+   "name": "display",
+   "kind": "display",
+   "center": [
+    -0.1,
+    -24.3
+   ],
+   "size": [
+    36.7,
+    16.6,
+    0.3
+   ],
+   "color": [
+    0.01,
+    0.01,
+    0.012
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a1_dsp",
+   "kind": "led",
+   "center": [
+    -52.1,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    1,
+    0.75,
+    0.05
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a1_hiz",
+   "kind": "led",
+   "center": [
+    -44.5,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    0.2,
+    0.9,
+    0.25
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a1_p48",
+   "kind": "led",
+   "center": [
+    -37.0,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    0.9,
+    0.05,
+    0.03
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a2_dsp",
+   "kind": "led",
+   "center": [
+    37.4,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    1,
+    0.75,
+    0.05
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a2_hiz",
+   "kind": "led",
+   "center": [
+    45.1,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    0.2,
+    0.9,
+    0.25
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "led_a2_p48",
+   "kind": "led",
+   "center": [
+    52.4,
+    -5.3
+   ],
+   "size": [
+    2.5,
+    2.5,
+    0.5
+   ],
+   "color": [
+    0.9,
+    0.05,
+    0.03
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "main",
+   "kind": "encoder",
+   "center": [
+    -0.1,
+    12.4
+   ],
+   "size": [
+    27.5,
+    27.5,
+    11
+   ],
+   "color": [
+    0.03,
+    0.03,
+    0.032
+   ]
+  },
+  {
+   "name": "func_left",
+   "kind": "jack",
+   "center": [
+    -24.8,
+    12.4
+   ],
+   "size": [
+    5.5,
+    5.5,
+    1.2
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ]
+  },
+  {
+   "name": "func_right",
+   "kind": "jack",
+   "center": [
+    25.5,
+    12.4
+   ],
+   "size": [
+    5.5,
+    5.5,
+    1.2
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ]
+  },
+  {
+   "name": "hp1",
+   "kind": "knob",
+   "center": [
+    -44.9,
+    35.8
+   ],
+   "size": [
+    15.8,
+    15.8,
+    9
+   ],
+   "color": [
+    0.03,
+    0.03,
+    0.032
+   ]
+  },
+  {
+   "name": "hp2",
+   "kind": "knob",
+   "center": [
+    44.7,
+    35.8
+   ],
+   "size": [
+    15.8,
+    15.8,
+    9
+   ],
+   "color": [
+    0.03,
+    0.03,
+    0.032
+   ]
+  },
+  {
+   "name": "badge_2",
+   "kind": "decor",
+   "center": [
+    18.9,
+    41.6
+   ],
+   "size": [
+    3,
+    3,
+    0.2
+   ],
+   "color": [
+    0.75,
+    0.04,
+    0.03
+   ],
+   "base": 47.1
+  },
+  {
+   "name": "p48v",
+   "kind": "port",
+   "center": [
+    -43.4,
+    65.25
+   ],
+   "size": [
+    5.4,
+    0.5,
+    5.4
+   ],
+   "color": [
+    0.75,
+    0.04,
+    0.03
+   ],
+   "face": "front",
+   "base": 10.9,
+   "solid": true
+  },
+  {
+   "name": "hiz_1",
+   "kind": "port",
+   "center": [
+    -22.6,
+    65.25
+   ],
+   "size": [
+    5.4,
+    0.5,
+    5.4
+   ],
+   "color": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "face": "front",
+   "base": 10.9,
+   "solid": true
+  },
+  {
+   "name": "hiz_2",
+   "kind": "port",
+   "center": [
+    -9.0,
+    65.25
+   ],
+   "size": [
+    5.4,
+    0.5,
+    5.4
+   ],
+   "color": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "face": "front",
+   "base": 10.9,
+   "solid": true
+  },
+  {
+   "name": "phones_1",
+   "kind": "port",
+   "center": [
+    20.3,
+    65.25
+   ],
+   "size": [
+    9,
+    0.5,
+    9
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "front",
+   "base": 9.8
+  },
+  {
+   "name": "phones_2",
+   "kind": "port",
+   "center": [
+    38.4,
+    65.25
+   ],
+   "size": [
+    9,
+    0.5,
+    9
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "front",
+   "base": 9.8
+  },
+  {
+   "name": "combo_a2",
+   "kind": "port",
+   "center": [
+    -41.2,
+    -65.25
+   ],
+   "size": [
+    19,
+    0.5,
+    19
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "rear",
+   "base": 16.1
+  },
+  {
+   "name": "combo_a1",
+   "kind": "port",
+   "center": [
+    -14.0,
+    -65.25
+   ],
+   "size": [
+    19,
+    0.5,
+    19
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "rear",
+   "base": 16.1
+  },
+  {
+   "name": "monitor_l",
+   "kind": "port",
+   "center": [
+    14.8,
+    -65.25
+   ],
+   "size": [
+    8.8,
+    0.5,
+    8.8
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "rear",
+   "base": 29.2
+  },
+  {
+   "name": "monitor_r",
+   "kind": "port",
+   "center": [
+    14.8,
+    -65.25
+   ],
+   "size": [
+    8.8,
+    0.5,
+    8.8
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "rear",
+   "base": 12.4
+  },
+  {
+   "name": "rear_badge",
+   "kind": "decor",
+   "center": [
+    34.8,
+    -65.15
+   ],
+   "size": [
+    9.6,
+    0.3,
+    9.6
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.6
+   ],
+   "base": 29.6
+  },
+  {
+   "name": "usb_c",
+   "kind": "decor",
+   "center": [
+    42.3,
+    -65.15
+   ],
+   "size": [
+    11,
+    0.3,
+    4.5
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ],
+   "base": 9.8
+  },
+  {
+   "name": "kensington",
+   "kind": "decor",
+   "center": [
+    51.6,
+    -65.15
+   ],
+   "size": [
+    3,
+    0.3,
+    7
+   ],
+   "color": [
+    0.1,
+    0.1,
+    0.1
+   ],
+   "base": 28.5
+  },
+  {
+   "name": "midi_in",
+   "kind": "port",
+   "center": [
+    67.75,
+    -10.5
+   ],
+   "size": [
+    13.8,
+    0.5,
+    13.8
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "right",
+   "base": 9.9
+  },
+  {
+   "name": "midi_out",
+   "kind": "port",
+   "center": [
+    67.75,
+    9.8
+   ],
+   "size": [
+    13.8,
+    0.5,
+    13.8
+   ],
+   "color": [
+    0.35,
+    0.35,
+    0.37
+   ],
+   "face": "right",
+   "base": 9.9
+  }
+ ],
+ "sections": [],
+ "model": "Zenith 2"
+}

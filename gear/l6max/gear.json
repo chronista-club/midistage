@@ -1,0 +1,2311 @@
+{
+ "id": "l6max",
+ "title": "ZOOM LiveTrak L6max",
+ "size": [
+  284,
+  114,
+  46.5
+ ],
+ "body_height": 37,
+ "corner": 10,
+ "body_color": [
+  0.02,
+  0.02,
+  0.022
+ ],
+ "source": "Official dimensions W284 D114 H46.5 mm, 673 g: https://zoomcorp.com/en/us/digital-mixer-multi-track-recorders/digital-mixer-recorder/livetrak-l6max/ . Control positions and sizes taken from the vector top-view diagram in the official operation manual (https://zoomcorp.com/manuals/l6max-en/ image/D445_parts-top.svg), scaled so the outline width = 284 mm (1 unit = 0.677 mm; cross-checked: TS jack nut 15 mm, combo jack 24 mm, OLED 24x13.4 mm). Diagram depth is 110 mm, centered in the 114 mm body. Heights (body 37, encoder 9.5, knob 9) are estimates. Encoder LED rings approximated as flat discs; rear/side connectors (SD, USB power, battery) omitted.",
+ "parts": [
+  {
+   "name": "panel_eq",
+   "kind": "decor",
+   "center": [
+    33.8,
+    -0.5
+   ],
+   "size": [
+    16.6,
+    101.5,
+    0.3
+   ],
+   "color": [
+    0.03,
+    0.06,
+    0.42
+   ]
+  },
+  {
+   "name": "strip_encoders",
+   "kind": "decor",
+   "center": [
+    -53.7,
+    40.1
+   ],
+   "size": [
+    158.4,
+    20.2,
+    0.3
+   ],
+   "color": [
+    0.03,
+    0.06,
+    0.42
+   ]
+  },
+  {
+   "name": "label_bar_1",
+   "kind": "decor",
+   "center": [
+    69.2,
+    -49.5
+   ],
+   "size": [
+    17.6,
+    3.7,
+    0.3
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "label_bar_2",
+   "kind": "decor",
+   "center": [
+    87.6,
+    -49.5
+   ],
+   "size": [
+    17.6,
+    3.7,
+    0.3
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "label_bar_3",
+   "kind": "decor",
+   "center": [
+    105.8,
+    -49.5
+   ],
+   "size": [
+    17.6,
+    3.7,
+    0.3
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "label_bar_4",
+   "kind": "decor",
+   "center": [
+    124.0,
+    -49.5
+   ],
+   "size": [
+    17.6,
+    3.7,
+    0.3
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "encoder_1",
+   "kind": "encoder",
+   "center": [
+    -123.0,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_1_ring",
+   "kind": "jack",
+   "center": [
+    -123.0,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_1",
+   "kind": "button",
+   "center": [
+    -123.0,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_1",
+   "kind": "led",
+   "center": [
+    -123.0,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_2",
+   "kind": "encoder",
+   "center": [
+    -103.2,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_2_ring",
+   "kind": "jack",
+   "center": [
+    -103.2,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_2",
+   "kind": "button",
+   "center": [
+    -103.2,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_2",
+   "kind": "led",
+   "center": [
+    -103.2,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_3",
+   "kind": "encoder",
+   "center": [
+    -83.4,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_3_ring",
+   "kind": "jack",
+   "center": [
+    -83.4,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_3",
+   "kind": "button",
+   "center": [
+    -83.4,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_3",
+   "kind": "led",
+   "center": [
+    -83.4,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_4",
+   "kind": "encoder",
+   "center": [
+    -63.6,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_4_ring",
+   "kind": "jack",
+   "center": [
+    -63.6,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_4",
+   "kind": "button",
+   "center": [
+    -63.6,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_4",
+   "kind": "led",
+   "center": [
+    -63.6,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_5",
+   "kind": "encoder",
+   "center": [
+    -43.8,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_5_ring",
+   "kind": "jack",
+   "center": [
+    -43.8,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_5",
+   "kind": "button",
+   "center": [
+    -43.8,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_5",
+   "kind": "led",
+   "center": [
+    -43.8,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_6",
+   "kind": "encoder",
+   "center": [
+    -24.0,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_6_ring",
+   "kind": "jack",
+   "center": [
+    -24.0,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_6",
+   "kind": "button",
+   "center": [
+    -24.0,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_6",
+   "kind": "led",
+   "center": [
+    -24.0,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_7",
+   "kind": "encoder",
+   "center": [
+    -4.2,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_7_ring",
+   "kind": "jack",
+   "center": [
+    -4.2,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_7",
+   "kind": "button",
+   "center": [
+    -4.2,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_7",
+   "kind": "led",
+   "center": [
+    -4.2,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "encoder_8",
+   "kind": "encoder",
+   "center": [
+    15.6,
+    40.0
+   ],
+   "size": [
+    17.4,
+    17.4,
+    9.5
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "encoder_8_ring",
+   "kind": "jack",
+   "center": [
+    15.6,
+    40.0
+   ],
+   "size": [
+    19.6,
+    19.6,
+    0.4
+   ],
+   "color": [
+    1,
+    0.43,
+    0.015
+   ]
+  },
+  {
+   "name": "mute_8",
+   "kind": "button",
+   "center": [
+    15.6,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "signal_8",
+   "kind": "led",
+   "center": [
+    15.6,
+    6.8
+   ],
+   "size": [
+    2.0,
+    2.0,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "hi_z_1",
+   "kind": "button",
+   "center": [
+    -126.6,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.35,
+    0.75,
+    0.45
+   ]
+  },
+  {
+   "name": "phantom_12",
+   "kind": "button",
+   "center": [
+    -113.1,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.35,
+    0.45
+   ]
+  },
+  {
+   "name": "hi_z_2",
+   "kind": "button",
+   "center": [
+    -99.7,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.35,
+    0.75,
+    0.45
+   ]
+  },
+  {
+   "name": "phantom_34",
+   "kind": "button",
+   "center": [
+    -73.5,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.35,
+    0.45
+   ]
+  },
+  {
+   "name": "mono_5",
+   "kind": "button",
+   "center": [
+    -43.8,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "mono_6",
+   "kind": "button",
+   "center": [
+    -24.0,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "usb_12",
+   "kind": "button",
+   "center": [
+    -4.2,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "usb_34",
+   "kind": "button",
+   "center": [
+    15.6,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "pad_switch_5",
+   "kind": "button",
+   "center": [
+    -43.8,
+    -9.1
+   ],
+   "size": [
+    6.4,
+    4.9,
+    2.0
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "pad_switch_6",
+   "kind": "button",
+   "center": [
+    -24.0,
+    -9.1
+   ],
+   "size": [
+    6.4,
+    4.9,
+    2.0
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "pad_switch_7",
+   "kind": "button",
+   "center": [
+    -4.2,
+    -9.1
+   ],
+   "size": [
+    6.4,
+    4.9,
+    2.0
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "pad_switch_8",
+   "kind": "button",
+   "center": [
+    15.6,
+    -9.1
+   ],
+   "size": [
+    6.4,
+    4.9,
+    2.0
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "eq_high",
+   "kind": "button",
+   "center": [
+    33.8,
+    -42.7
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "eq_freq",
+   "kind": "button",
+   "center": [
+    33.8,
+    -33.2
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "eq_mid",
+   "kind": "button",
+   "center": [
+    33.8,
+    -23.7
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "eq_low",
+   "kind": "button",
+   "center": [
+    33.8,
+    -14.2
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "send_aux1",
+   "kind": "button",
+   "center": [
+    33.8,
+    -4.7
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "send_aux2",
+   "kind": "button",
+   "center": [
+    33.8,
+    4.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "send_efx",
+   "kind": "button",
+   "center": [
+    33.8,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "sub_mix",
+   "kind": "button",
+   "center": [
+    33.8,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "pan",
+   "kind": "button",
+   "center": [
+    33.8,
+    34.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "level",
+   "kind": "button",
+   "center": [
+    33.8,
+    43.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.35,
+    0.45
+   ]
+  },
+  {
+   "name": "sound_pad_1",
+   "kind": "button",
+   "center": [
+    51.2,
+    -4.7
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "sound_pad_2",
+   "kind": "button",
+   "center": [
+    51.2,
+    4.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "sound_pad_3",
+   "kind": "button",
+   "center": [
+    51.2,
+    14.3
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "sound_pad_4",
+   "kind": "button",
+   "center": [
+    51.2,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.85,
+    0.86,
+    0.84
+   ]
+  },
+  {
+   "name": "tap",
+   "kind": "button",
+   "center": [
+    69.4,
+    -4.7
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.35,
+    0.75,
+    0.45
+   ]
+  },
+  {
+   "name": "sel",
+   "kind": "button",
+   "center": [
+    69.4,
+    23.8
+   ],
+   "size": [
+    10.3,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "comp",
+   "kind": "button",
+   "center": [
+    87.6,
+    23.8
+   ],
+   "size": [
+    10.4,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "play_stop",
+   "kind": "button",
+   "center": [
+    101.4,
+    23.8
+   ],
+   "size": [
+    10.6,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "rec",
+   "kind": "button",
+   "center": [
+    114.9,
+    23.8
+   ],
+   "size": [
+    10.6,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.8,
+    0.05,
+    0.04
+   ]
+  },
+  {
+   "name": "bounce",
+   "kind": "button",
+   "center": [
+    128.4,
+    23.8
+   ],
+   "size": [
+    10.6,
+    5.4,
+    1.4
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "menu",
+   "kind": "button",
+   "center": [
+    99.5,
+    14.3
+   ],
+   "size": [
+    6.6,
+    4.6,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "rewind",
+   "kind": "button",
+   "center": [
+    109.8,
+    14.3
+   ],
+   "size": [
+    6.6,
+    4.6,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "forward",
+   "kind": "button",
+   "center": [
+    120.0,
+    14.3
+   ],
+   "size": [
+    6.6,
+    4.6,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "undo",
+   "kind": "button",
+   "center": [
+    130.3,
+    14.3
+   ],
+   "size": [
+    6.6,
+    4.6,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "scene_a",
+   "kind": "button",
+   "center": [
+    101.4,
+    -22.5
+   ],
+   "size": [
+    6.4,
+    4.3,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "scene_b",
+   "kind": "button",
+   "center": [
+    110.2,
+    -22.5
+   ],
+   "size": [
+    6.4,
+    4.3,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "scene_c",
+   "kind": "button",
+   "center": [
+    101.4,
+    -15.3
+   ],
+   "size": [
+    6.4,
+    4.3,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "scene_d",
+   "kind": "button",
+   "center": [
+    110.2,
+    -15.3
+   ],
+   "size": [
+    6.4,
+    4.3,
+    1.2
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "sub_mix_switch",
+   "kind": "button",
+   "center": [
+    124.0,
+    -20.0
+   ],
+   "size": [
+    3.5,
+    5.8,
+    2.0
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "power",
+   "kind": "jack",
+   "center": [
+    -132.0,
+    -45.0
+   ],
+   "size": [
+    10.8,
+    10.8,
+    1.0
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "sound_pad_knob",
+   "kind": "knob",
+   "center": [
+    51.2,
+    40.0
+   ],
+   "size": [
+    12.7,
+    12.7,
+    9.0
+   ],
+   "color": [
+    0.55,
+    0.56,
+    0.58
+   ]
+  },
+  {
+   "name": "efx_rtn",
+   "kind": "knob",
+   "center": [
+    69.4,
+    40.0
+   ],
+   "size": [
+    12.7,
+    12.7,
+    9.0
+   ],
+   "color": [
+    0.05,
+    0.1,
+    0.6
+   ]
+  },
+  {
+   "name": "master",
+   "kind": "knob",
+   "center": [
+    87.6,
+    40.0
+   ],
+   "size": [
+    12.7,
+    12.7,
+    9.0
+   ],
+   "color": [
+    0.8,
+    0.05,
+    0.04
+   ]
+  },
+  {
+   "name": "monitor",
+   "kind": "knob",
+   "center": [
+    105.8,
+    40.0
+   ],
+   "size": [
+    12.7,
+    12.7,
+    9.0
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "sub_out",
+   "kind": "knob",
+   "center": [
+    124.0,
+    40.0
+   ],
+   "size": [
+    12.7,
+    12.7,
+    9.0
+   ],
+   "color": [
+    0.02,
+    0.02,
+    0.022
+   ]
+  },
+  {
+   "name": "display",
+   "kind": "display",
+   "center": [
+    114.9,
+    1.4
+   ],
+   "size": [
+    24.0,
+    13.4,
+    0.3
+   ],
+   "color": [
+    0.01,
+    0.01,
+    0.012
+   ]
+  },
+  {
+   "name": "meter_l_1",
+   "kind": "led",
+   "center": [
+    79.3,
+    -5.3
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_l_2",
+   "kind": "led",
+   "center": [
+    79.3,
+    -1.2
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_l_3",
+   "kind": "led",
+   "center": [
+    79.3,
+    2.8
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_l_4",
+   "kind": "led",
+   "center": [
+    79.3,
+    6.9
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_l_5",
+   "kind": "led",
+   "center": [
+    79.3,
+    11.0
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_l_6",
+   "kind": "led",
+   "center": [
+    79.3,
+    15.0
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_1",
+   "kind": "led",
+   "center": [
+    82.7,
+    -5.3
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_2",
+   "kind": "led",
+   "center": [
+    82.7,
+    -1.2
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_3",
+   "kind": "led",
+   "center": [
+    82.7,
+    2.8
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_4",
+   "kind": "led",
+   "center": [
+    82.7,
+    6.9
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_5",
+   "kind": "led",
+   "center": [
+    82.7,
+    11.0
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "meter_r_6",
+   "kind": "led",
+   "center": [
+    82.7,
+    15.0
+   ],
+   "size": [
+    2.2,
+    2.2,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_1",
+   "kind": "led",
+   "center": [
+    63.1,
+    1.8
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_2",
+   "kind": "led",
+   "center": [
+    63.1,
+    5.7
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_3",
+   "kind": "led",
+   "center": [
+    63.1,
+    8.6
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_4",
+   "kind": "led",
+   "center": [
+    63.1,
+    11.5
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_5",
+   "kind": "led",
+   "center": [
+    63.1,
+    14.4
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "fx_led_6",
+   "kind": "led",
+   "center": [
+    63.1,
+    17.3
+   ],
+   "size": [
+    1.8,
+    1.8,
+    0.4
+   ],
+   "color": [
+    0.12,
+    0.12,
+    0.12
+   ]
+  },
+  {
+   "name": "combo_1",
+   "kind": "jack",
+   "center": [
+    -108.2,
+    -34.1
+   ],
+   "size": [
+    24.0,
+    24.0,
+    1.5
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ]
+  },
+  {
+   "name": "combo_2",
+   "kind": "jack",
+   "center": [
+    -66.2,
+    -34.1
+   ],
+   "size": [
+    24.0,
+    24.0,
+    1.5
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ]
+  },
+  {
+   "name": "combo_3",
+   "kind": "jack",
+   "center": [
+    -123.7,
+    -12.8
+   ],
+   "size": [
+    24.0,
+    24.0,
+    1.5
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ]
+  },
+  {
+   "name": "combo_4",
+   "kind": "jack",
+   "center": [
+    -81.7,
+    -12.8
+   ],
+   "size": [
+    24.0,
+    24.0,
+    1.5
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ]
+  },
+  {
+   "name": "line_5_l",
+   "kind": "jack",
+   "center": [
+    -43.8,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_5_r",
+   "kind": "jack",
+   "center": [
+    -43.8,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_6_l",
+   "kind": "jack",
+   "center": [
+    -24.0,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_6_r",
+   "kind": "jack",
+   "center": [
+    -24.0,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_7_l",
+   "kind": "jack",
+   "center": [
+    -4.2,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_7_r",
+   "kind": "jack",
+   "center": [
+    -4.2,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_8_l",
+   "kind": "jack",
+   "center": [
+    15.6,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "line_8_r",
+   "kind": "jack",
+   "center": [
+    15.6,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "aux_send_1",
+   "kind": "jack",
+   "center": [
+    69.4,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "aux_send_2",
+   "kind": "jack",
+   "center": [
+    69.4,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "master_l",
+   "kind": "jack",
+   "center": [
+    87.6,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "master_r",
+   "kind": "jack",
+   "center": [
+    87.6,
+    -22.5
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "monitor_out",
+   "kind": "jack",
+   "center": [
+    105.8,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "sub_out_jack",
+   "kind": "jack",
+   "center": [
+    124.0,
+    -40.0
+   ],
+   "size": [
+    15.0,
+    15.0,
+    1.5
+   ],
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ]
+  },
+  {
+   "name": "midi_in",
+   "kind": "jack",
+   "center": [
+    51.2,
+    -45.1
+   ],
+   "size": [
+    5.2,
+    5.2,
+    0.8
+   ],
+   "color": [
+    0.5,
+    0.5,
+    0.52
+   ]
+  },
+  {
+   "name": "midi_out",
+   "kind": "jack",
+   "center": [
+    51.2,
+    -32.1
+   ],
+   "size": [
+    5.2,
+    5.2,
+    0.8
+   ],
+   "color": [
+    0.5,
+    0.5,
+    0.52
+   ]
+  },
+  {
+   "name": "usb_c",
+   "kind": "decor",
+   "center": [
+    51.2,
+    -23.8
+   ],
+   "size": [
+    5.7,
+    4.0,
+    0.2
+   ],
+   "color": [
+    0.3,
+    0.3,
+    0.32
+   ]
+  }
+ ],
+ "sections": [
+  {
+   "id": "l6max.encoders",
+   "kind": "knobs",
+   "parts": [
+    "encoder_1",
+    "encoder_2",
+    "encoder_3",
+    "encoder_4",
+    "encoder_5",
+    "encoder_6",
+    "encoder_7",
+    "encoder_8",
+    "master"
+   ]
+  },
+  {
+   "id": "l6max.mutes",
+   "kind": "buttons",
+   "parts": [
+    "mute_1",
+    "mute_2",
+    "mute_3",
+    "mute_4",
+    "mute_5",
+    "mute_6",
+    "mute_7",
+    "mute_8"
+   ]
+  },
+  {
+   "id": "l6max.sound_pads",
+   "kind": "pads",
+   "parts": [
+    "sound_pad_1",
+    "sound_pad_2",
+    "sound_pad_3",
+    "sound_pad_4"
+   ]
+  }
+ ],
+ "model": "LiveTrak L6max"
+}

@@ -98,7 +98,8 @@ def main():
     ids = only or gearlib.GEAR_IDS
     for gid in ids:
         export(gearlib.load(HERE, gid), out)
-    m = gearlib.manifest(out, commit or git_commit(), ids)
+    # 目録は --only に関わらず配布先にある全機材を載せる（--only で他の機材の項が消えないように）
+    m = gearlib.manifest(out, commit or git_commit(), gearlib.GEAR_IDS)
     with open(os.path.join(out, "manifest.json"), "w") as f:
         json.dump(m, f, ensure_ascii=False, indent=1)
     print(f"MANIFEST_OK {len(ids)} gear → {out}")
