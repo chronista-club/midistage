@@ -140,8 +140,10 @@ fn fault(runtime: &Shared, fence: &IoFence, message: String) {
         .and_then(|d| d.lease.as_ref())
         == Some(&fence.lease)
     {
+        tracing::warn!(device = %fence.device_id, token = %fence.lease.token, "MIDI I/O fault: {message}");
         r.driver_errors.insert(fence.device_id.clone(), message);
         let _ = r.broker.set_present(&fence.device_id, false);
+        r.log_flow();
     }
 }
 fn output_worker(
@@ -309,7 +311,7 @@ impl NativeBridge {
                             };
                             if trace::enabled() {
                                 let verdict = if permit.is_ok() { "FWD" } else { "DROP no lease" };
-                                for packet in packets.iter() {
+                                for packet in packets.iter().filter(|p| trace::keep(p.data())) {
                                     tracing::info!(target: trace::TARGET, dir = "dev→app", device = %input_fence.device_id,
                                         app = %input_client, port = %input_port_name, kind = trace::describe(packet.data()),
                                         "{verdict} | {}", trace::format_bytes(packet.data()));
@@ -387,6 +389,13 @@ impl NativeBridge {
                 bridge.outputs.push(destination);
             }
         }
+        // MIDI の通り道ができた。トレースの有無に関係なく info に（「どこまで接続が来ているか」の要）
+        tracing::info!(
+            "{device_id}: virtual ports opened for {client_id} ({}) | in {:?} | out {:?}",
+            lease.token,
+            bridge.ports.inputs,
+            bridge.ports.outputs
+        );
         if trace::enabled() {
             tracing::info!(target: trace::TARGET, device = %device_id, app = %client_id, token = %lease.token,
                 "OPEN bridge | in {:?} | out {:?}", bridge.ports.inputs, bridge.ports.outputs);
@@ -430,6 +439,11 @@ impl NativeBridge {
 }
 impl Drop for NativeBridge {
     fn drop(&mut self) {
+        tracing::info!(
+            "{}: virtual ports closed ({})",
+            self.fence.device_id,
+            self.fence.lease.token
+        );
         if trace::enabled() {
             tracing::info!(target: trace::TARGET, device = %self.fence.device_id, token = %self.fence.lease.token,
                 "CLOSE bridge");
@@ -624,6 +638,7 @@ impl NativeRuntime {
                         self.bridges.insert(state.device_id, bridge);
                     }
                     Err(error) => {
+                        tracing::warn!(device = %state.device_id, "MIDI bridge open failed: {error}");
                         self.runtime
                             .lock()
                             .expect("runtime mutex poisoned")
@@ -633,5 +648,10 @@ impl NativeRuntime {
                 }
             }
         }
+        // 挿抜・引き継ぎ完了など、この poll で起きた状態の変化を info に
+        self.runtime
+            .lock()
+            .expect("runtime mutex poisoned")
+            .log_flow();
     }
 }

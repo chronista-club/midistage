@@ -82,6 +82,8 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 
 - REQ-APP-050: midistaged は MIDI の流れを 1 本の時系列で記録できる。記録点は 機材→app（転送 / lease が無く破棄）、app→サービス（受理 / 溢れ）、サービス→機材（送信 / 古い lease で破棄 / 失敗）、仮想ポートの開閉。各行に 機材 / app / 向き / 種類 / バイト列（長い SysEx は頭と尾と長さ）
 - REQ-APP-051: 既定はオフ。オフのときの負荷は 1 パケットあたり atomic の読み 1 回。再起動なしで切り替わる（`<state_dir>/trace` の有無を毎秒見る。`MIDISTAGED_TRACE=1` で強制オン）
+- REQ-APP-053: 流れの要所は **info ログ**（`midistaged.log`、常時オン）に出す。セッションの接続 / 切断（app 名）、機材ごとの 挿抜 / 担当の変化（revision）/ lease の付与・手放し・移動 / phase の変化（releasing の行き先）、仮想ポートの開閉。要求の拒否と MIDI I/O の障害は warn。Snapshot の取得のように状態を変えない要求は出さない（mako 2026-10-13「info は、開発中も常時見たいエラーレベル」）
+- REQ-APP-054: トレースはクロック（F8）と Active Sensing（FE）だけのパケットを既定で省く。フラグファイルに `realtime` と書けば含める
 - REQ-APP-052: 記録は通常のログと分ける（`~/Library/Logs/midistaged/trace.log.<日付>`）。メニューから開始・停止・開くができ、オンの間はメニューに注意として出す（止め忘れ防止）
 
 ### 共通

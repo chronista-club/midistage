@@ -20,6 +20,10 @@ pub struct Runtime {
     native_sessions: BTreeMap<String, bool>,
     store: SettingsStore,
     saved: SavedSettings,
+    /// 最後に info ログへ出した状態。`log_flow` がここからの差分だけを出す（重複も取りこぼしもしない）
+    flow_seen: Broker,
+    /// session → app 名。切断後も lease の手放しを名前で出せるよう覚えておく（上限あり）
+    session_names: BTreeMap<String, String>,
 }
 impl Runtime {
     pub fn new(mut broker: Broker, store: SettingsStore) -> anyhow::Result<Self> {
@@ -39,6 +43,8 @@ impl Runtime {
         );
         Ok(Self {
             snapshot_sequence: std::sync::atomic::AtomicU64::new(1),
+            flow_seen: broker.clone(),
+            session_names: BTreeMap::new(),
             broker,
             store,
             saved,
@@ -78,7 +84,35 @@ impl Runtime {
         self.commit(candidate, saved)?;
         self.native_sessions
             .insert(session.into(), hello.native_midi);
+        if self.session_names.len() >= 256 {
+            self.session_names.clear();
+        }
+        self.session_names
+            .insert(session.into(), hello.client_id.clone());
+        tracing::info!(
+            "session connected: {} ({}) native_midi={}",
+            hello.client_id,
+            hello.display_name,
+            hello.native_midi
+        );
         Ok(())
+    }
+
+    /// 前回ログに出してからの状態の変化を info に出す（flow.rs）。状態を変える処理の直後に呼ぶ
+    pub fn log_flow(&mut self) {
+        let names = self.session_names.clone();
+        let name_of = |s: &str| names.get(s).cloned();
+        for line in crate::flow::changes(&self.flow_seen, &self.broker, &name_of) {
+            tracing::info!("{line}");
+        }
+        self.flow_seen = self.broker.clone();
+    }
+
+    pub fn client_name(&self, session: &str) -> String {
+        self.session_names
+            .get(session)
+            .cloned()
+            .unwrap_or_else(|| "?".into())
     }
     pub fn set_enabled(&mut self, session: &str, request: &SetEnabled) -> anyhow::Result<()> {
         let mut candidate = self.broker.clone();
@@ -115,8 +149,12 @@ impl Runtime {
         self.native_sessions.get(session) == Some(&true)
     }
     pub fn disconnect(&mut self, session: &str) {
+        if self.broker.client_for_session(session).is_some() {
+            tracing::info!("session disconnected: {}", self.client_name(session));
+        }
         self.native_sessions.remove(session);
         self.broker.disconnect_session(session);
+        self.log_flow();
     }
 }
 

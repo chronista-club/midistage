@@ -15,16 +15,31 @@ use std::sync::atomic::{AtomicBool, Ordering};
 pub const TARGET: &str = "midistage_trace";
 
 static ENABLED: AtomicBool = AtomicBool::new(false);
+/// クロック（F8）と Active Sensing（FE）も記録するか。既定は省く（1 秒に数十行で埋もれるため）
+static REALTIME: AtomicBool = AtomicBool::new(false);
 
 #[inline]
 pub fn enabled() -> bool {
     ENABLED.load(Ordering::Relaxed)
 }
 
-/// フラグファイルと環境変数から状態を決め、変わったときだけ true を返す
+/// 記録するパケットか。realtime（F8 / FE）だけのパケットは、`realtime` 指定が無ければ省く（純粋 + フラグ）
+pub fn keep(bytes: &[u8]) -> bool {
+    REALTIME.load(Ordering::Relaxed) || !is_noise(bytes)
+}
+
+/// クロックと Active Sensing だけでできているか（純粋）
+pub fn is_noise(bytes: &[u8]) -> bool {
+    !bytes.is_empty() && bytes.iter().all(|b| *b == 0xf8 || *b == 0xfe)
+}
+
+/// フラグファイルと環境変数から状態を決め、変わったときだけ true を返す。
+/// フラグファイルに `realtime` と書けば、クロックと Active Sensing も記録する
 pub fn refresh(state_dir: &Path) -> bool {
-    let want = std::env::var_os("MIDISTAGED_TRACE").is_some_and(|v| v == "1")
-        || state_dir.join("trace").exists();
+    let flag = state_dir.join("trace");
+    let want = std::env::var_os("MIDISTAGED_TRACE").is_some_and(|v| v == "1") || flag.exists();
+    let realtime = std::fs::read_to_string(&flag).is_ok_and(|s| s.contains("realtime"));
+    REALTIME.store(realtime, Ordering::Relaxed);
     let was = ENABLED.swap(want, Ordering::Relaxed);
     if was != want {
         tracing::info!("MIDI trace {}", if want { "on" } else { "off" });
@@ -97,6 +112,15 @@ mod tests {
         let line = format_bytes(&sysex);
         assert!(line.starts_with("F0 42 49 11"));
         assert!(line.ends_with("11 11 11 F7 (64 bytes)"), "{line}");
+    }
+
+    #[test]
+    fn clock_and_active_sensing_are_noise_but_mixed_packets_are_not() {
+        assert!(is_noise(&[0xf8]));
+        assert!(is_noise(&[0xf8, 0xfe, 0xf8]));
+        assert!(!is_noise(&[0xf8, 0x90, 60, 100]));
+        assert!(!is_noise(&[0xb0, 1, 2]));
+        assert!(!is_noise(&[]));
     }
 
     #[test]

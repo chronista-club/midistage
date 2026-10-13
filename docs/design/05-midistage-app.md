@@ -146,6 +146,7 @@ midistage.app/Contents/
 - 記録点（`native.rs`）: 物理入力コールバック（`FWD` / `DROP no lease`）、仮想 destination（`QUEUE` / `OVERFLOW`）、送信 worker（`SENT` / `DROP stale lease` / `FAIL`、`via=port|SendMidi`）、`NativeBridge::open` / `Drop`（`OPEN` / `CLOSE bridge`）
 - `main.rs`: target で層を分ける — stderr と `midistaged.log` は `midistage_trace` を除外、`trace.log` はそれだけ。worker loop が 20 tick（1 秒）ごとに `refresh`
 - app: `MidiTrace`（フラグの作成・削除、最新 trace.log を開く）、`ServiceState.tracing` で注意を出す
+- **info の流れ**（REQ-APP-053）: `crates/midistaged/src/flow.rs` の `changes(before, after, name_of)`（純粋、テスト）が Broker の前後を機材ごとに 1 行へ。`Runtime` は「最後に出した状態」`flow_seen` と session → app 名を持ち、`log_flow()` がそこからの差分を出して更新する（重複も取りこぼしもしない）。呼ぶのは 要求の処理（`dispatch`、Snapshot 以外）・切断・poll の終わり・I/O 障害。仮想ポートの開閉は `NativeBridge` が直接 info に
 - 次の段: app に「トレース」窓を足して流して見る（サービス → app に流す口が要る = wire 拡張）。今はファイル
 
 ## 未決

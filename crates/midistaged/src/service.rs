@@ -314,6 +314,16 @@ fn dispatch(
         }
         Ok(())
     })();
+    if method != "Snapshot" {
+        if let Err(reason) = &result {
+            // 拒否は開発中も常に見たい（stale_revision、未認証、版違い …）
+            tracing::warn!(
+                "request {method} from {} rejected: {reason}",
+                runtime.client_name(session)
+            );
+        }
+        runtime.log_flow();
+    }
     match result {
         Ok(()) => Reply {
             snapshot: Some(snapshot(runtime, session)),
