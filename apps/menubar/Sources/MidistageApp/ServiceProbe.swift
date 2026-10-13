@@ -11,23 +11,41 @@ struct ProbeResult: Sendable {
 
 actor ServiceProbe {
     private var releasingSince: [String: Date] = [:]
+    /// 繋ぎっぱなしにする（3 秒ごとに接続・切断すると、サービスの info ログが毎回 connected / disconnected で埋まる）。
+    /// 状態は Snapshot 要求で読み直す。失敗したら捨てて、次回に繋ぎ直す
+    private var client: Client?
+    private var epoch: String?
     /// releasing がこれより長く続いたら「止まっている」とみなす（表示上の閾値。design 05）
     let stuckAfter: TimeInterval = 5
 
     func probe() async -> ProbeResult {
         let url = Client.defaultEndpointURL
-        guard FileManager.default.fileExists(atPath: url.path) else { return ProbeResult(running: .stopped, devices: []) }
+        guard FileManager.default.fileExists(atPath: url.path) else {
+            if let stale = client { await stale.close() }
+            client = nil
+            return ProbeResult(running: .stopped, devices: [])
+        }
         do {
-            let (client, snapshot) = try await Client.connect(
-                endpointURL: url, clientID: "club.chronista.midistage.app",
-                displayName: "midistage", nativeMIDI: false)
-            await client.close()
+            let snapshot: Snapshot
+            if let client {
+                snapshot = try await client.snapshot()
+            } else {
+                let (connected, first) = try await Client.connect(
+                    endpointURL: url, clientID: "club.chronista.midistage.app",
+                    displayName: "midistage", nativeMIDI: false)
+                client = connected
+                snapshot = first
+            }
+            epoch = snapshot.serverEpoch
             let summary = summarize(snapshot)
             let running = Running.connected(version: snapshot.service?.version,
                                             executable: snapshot.service?.executable,
                                             devices: summary)
             return ProbeResult(running: running, devices: facts(snapshot))
         } catch {
+            // 繋がっていた client は捨てる（サービスの再起動・入れ替えで epoch が変わった等）。次回に繋ぎ直す
+            if let stale = client { await stale.close() }
+            client = nil
             return ProbeResult(running: .unreachable(reason: "\(error)"), devices: [])
         }
     }
