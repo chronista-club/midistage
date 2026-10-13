@@ -8,3 +8,4 @@ pub mod service;
 pub mod settings;
 
 pub mod paths;
+pub mod trace;

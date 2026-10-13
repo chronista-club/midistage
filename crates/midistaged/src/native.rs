@@ -1,4 +1,5 @@
 //! OS 境界。実機を開くのは NativeBridge::open だけで、列挙は read-only。
+use crate::trace;
 use crate::{
     inventory::{self, DevicePorts, Port},
     io_fence::{InFlight, IoFence, OutputRequest, OutputSink},
@@ -149,18 +150,29 @@ fn output_worker(
     output: OutputPort,
     receiver: mpsc::Receiver<OutputRequest>,
     finalizers: Finalizers,
+    client_id: String,
 ) {
     while let Ok(message) = receiver.recv() {
         let permit = {
             let r = runtime.lock().expect("runtime mutex poisoned");
             fence.begin(&r.broker)
         };
+        let via = if message.completion.is_some() {
+            "SendMidi"
+        } else {
+            "port"
+        };
         let Ok(permit) = permit else {
+            if trace::enabled() {
+                tracing::info!(target: trace::TARGET, dir = "svc→dev", device = %fence.device_id, app = %client_id,
+                    via, kind = trace::describe(&message.bytes), "DROP stale lease | {}", trace::format_bytes(&message.bytes));
+            }
             if let Some(completion) = message.completion {
                 let _ = completion.send(Err("stale_lease".into()));
             }
             continue;
         }; // 古い仮想ポートに溜まった送信は破棄。
+        let traced = trace::enabled().then(|| message.bytes.clone());
         // Keep the fence held through success bookkeeping, after the OS callback.
         let _operation = permit.clone();
         let inverse = midistage_profiles::keystage::disconnect_after(&message.bytes);
@@ -185,6 +197,18 @@ fn output_worker(
                 pending.insert(message.destination, frame);
             } else if disconnect {
                 pending.remove(&message.destination);
+            }
+        }
+        if let Some(bytes) = traced {
+            match &result {
+                Ok(()) => {
+                    tracing::info!(target: trace::TARGET, dir = "svc→dev", device = %fence.device_id, app = %client_id,
+                    via, kind = trace::describe(&bytes), "SENT | {}", trace::format_bytes(&bytes))
+                }
+                Err(error) => {
+                    tracing::info!(target: trace::TARGET, dir = "svc→dev", device = %fence.device_id, app = %client_id,
+                    via, kind = trace::describe(&bytes), "FAIL {error} | {}", trace::format_bytes(&bytes))
+                }
             }
         }
         if let Err(error) = &result {
@@ -232,6 +256,7 @@ impl NativeBridge {
         let worker_fence = fence.clone();
         let finalizers = Arc::new(Mutex::new(BTreeMap::new()));
         let worker_finalizers = finalizers.clone();
+        let worker_client = client_id.clone();
         let worker = thread::spawn(move || {
             output_worker(
                 worker_runtime,
@@ -239,6 +264,7 @@ impl NativeBridge {
                 output,
                 receiver,
                 worker_finalizers,
+                worker_client,
             )
         });
         let mut bridge = Self {
@@ -271,6 +297,8 @@ impl NativeBridge {
                 let forward = virtual_source.clone();
                 let input_runtime = runtime.clone();
                 let input_fence = bridge.fence.clone();
+                let input_client = client_id.clone();
+                let input_port_name = port.name.clone();
                 let input =
                     os(bridge
                         .client
@@ -279,6 +307,14 @@ impl NativeBridge {
                                 let r = input_runtime.lock().expect("runtime mutex poisoned");
                                 input_fence.begin(&r.broker)
                             };
+                            if trace::enabled() {
+                                let verdict = if permit.is_ok() { "FWD" } else { "DROP no lease" };
+                                for packet in packets.iter() {
+                                    tracing::info!(target: trace::TARGET, dir = "dev→app", device = %input_fence.device_id,
+                                        app = %input_client, port = %input_port_name, kind = trace::describe(packet.data()),
+                                        "{verdict} | {}", trace::format_bytes(packet.data()));
+                                }
+                            }
                             if let Ok(_permit) = permit {
                                 // 元の host timestamp / packet 境界をそのまま仮想 source に渡す。
                                 if let Err(status) = forward.received(packets) {
@@ -297,6 +333,8 @@ impl NativeBridge {
                 let sender = bridge.sender.as_ref().expect("sender exists").clone();
                 let output_runtime = runtime.clone();
                 let output_fence = bridge.fence.clone();
+                let output_client = client_id.clone();
+                let output_port_name = port.name.clone();
                 let uid = port.uid;
                 let mut stream = MidiStream::default();
                 let destination = os(bridge.client.virtual_destination(&name, move |packets| {
@@ -304,6 +342,11 @@ impl NativeBridge {
                         match stream.push(packet.data()) {
                             Ok(messages) => {
                                 for bytes in messages {
+                                    if trace::enabled() {
+                                        tracing::info!(target: trace::TARGET, dir = "app→svc", device = %output_fence.device_id,
+                                            app = %output_client, port = %output_port_name, kind = trace::describe(&bytes),
+                                            "QUEUE | {}", trace::format_bytes(&bytes));
+                                    }
                                     if sender
                                         .try_send(OutputRequest {
                                             destination: uid,
@@ -312,6 +355,10 @@ impl NativeBridge {
                                         })
                                         .is_err()
                                     {
+                                        if trace::enabled() {
+                                            tracing::info!(target: trace::TARGET, dir = "app→svc", device = %output_fence.device_id,
+                                                app = %output_client, "OVERFLOW queue full; lease stopped");
+                                        }
                                         fault(
                                             &output_runtime,
                                             &output_fence,
@@ -339,6 +386,10 @@ impl NativeBridge {
                 bridge.ports.outputs.push(display_name);
                 bridge.outputs.push(destination);
             }
+        }
+        if trace::enabled() {
+            tracing::info!(target: trace::TARGET, device = %device_id, app = %client_id, token = %lease.token,
+                "OPEN bridge | in {:?} | out {:?}", bridge.ports.inputs, bridge.ports.outputs);
         }
         Ok(bridge)
     }
@@ -379,6 +430,10 @@ impl NativeBridge {
 }
 impl Drop for NativeBridge {
     fn drop(&mut self) {
+        if trace::enabled() {
+            tracing::info!(target: trace::TARGET, device = %self.fence.device_id, token = %self.fence.lease.token,
+                "CLOSE bridge");
+        }
         self.inputs.clear();
         self.outputs.clear();
         self.sources.clear();

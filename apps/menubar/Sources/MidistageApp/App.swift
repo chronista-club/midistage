@@ -48,7 +48,7 @@ extension Icon {
 
 @MainActor @Observable
 final class AppModel {
-    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
+    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn())
     var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
@@ -69,7 +69,7 @@ final class AppModel {
     func refresh() async {
         let result = await probe.probe()
         rows = statusRows(result.devices)
-        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn())
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
@@ -109,6 +109,13 @@ struct MenuContent: View {
         }
         Divider()
         Button("ステータスを開く") { openWindow(id: "status"); NSApp.activate(ignoringOtherApps: true) }
+        Divider()
+        if model.state.tracing {
+            Button("MIDI トレースを止める") { model.act(MidiTrace.stop) }
+            Button("トレースを開く") { MidiTrace.openLatest() }
+        } else {
+            Button("MIDI トレースを開始（開発用）") { model.act(MidiTrace.start) }
+        }
         Button("ログを開く") {
             let logs = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/midistaged")
             NSWorkspace.shared.open(logs)
