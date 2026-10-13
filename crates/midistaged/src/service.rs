@@ -285,6 +285,14 @@ fn dispatch(
     if !authenticated && method != "Hello" {
         return error("unauthenticated", "Hello is required");
     }
+    let hello_client = (method == "Hello")
+        .then(|| {
+            payload
+                .get("client_id")
+                .and_then(|v| v.as_str())
+                .map(String::from)
+        })
+        .flatten();
     let result = (|| -> anyhow::Result<()> {
         match method {
             "Hello" => {
@@ -316,11 +324,14 @@ fn dispatch(
     })();
     if method != "Snapshot" {
         if let Err(reason) = &result {
-            // 拒否は開発中も常に見たい（stale_revision、未認証、版違い …）
-            tracing::warn!(
-                "request {method} from {} rejected: {reason}",
+            // 拒否は開発中も常に見たい（stale_revision、未認証、版違い …）。
+            // Hello はまだ名前を覚えていないので、名乗った client_id を出す
+            let who = if method == "Hello" {
+                hello_client.clone().unwrap_or_else(|| "?".into())
+            } else {
                 runtime.client_name(session)
-            );
+            };
+            tracing::warn!("request {method} from {who} rejected: {reason}");
         }
         runtime.log_flow();
     }

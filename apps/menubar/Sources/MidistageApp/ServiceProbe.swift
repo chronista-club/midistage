@@ -18,6 +18,13 @@ actor ServiceProbe {
     /// releasing がこれより長く続いたら「止まっている」とみなす（表示上の閾値。design 05）
     let stuckAfter: TimeInterval = 5
 
+    /// 終了時に呼ぶ。閉じずに落ちると、サービスは QUIC のタイムアウト（約 30 秒）までセッションを
+    /// 生きているとみなし、その間の再接続は「同じ app のセッションがある」で断られる（実測 2026-10-14）
+    func close() async {
+        if let client { await client.close() }
+        client = nil
+    }
+
     func probe() async -> ProbeResult {
         let url = Client.defaultEndpointURL
         guard FileManager.default.fileExists(atPath: url.path) else {
