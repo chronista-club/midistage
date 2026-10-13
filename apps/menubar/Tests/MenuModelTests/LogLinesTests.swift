@@ -71,3 +71,12 @@ import Testing
     #expect(newestLogFile(names, prefix: "trace.log") == "trace.log.2026-10-13")
     #expect(newestLogFile([], prefix: "trace.log") == nil)
 }
+
+@Test func clockRowsCanBeHidden() throws {
+    let clock = try #require(parseLogLine(#"2026-10-13T06:24:41.8Z  INFO FWD | F8 dir="dev→app" device=keystage app=ladyland port=Keystage KBD/CTRL kind="clock""#, id: 10))
+    let cc = try #require(parseLogLine(#"2026-10-13T14:36:49.0Z  INFO FWD | B7 4F 1F dir="dev→app" device=lpd8 app=vp port=LPD8 mk2 kind="cc""#, id: 11))
+    let clockRow = try #require(traceRow(clock))
+    let ccRow = try #require(traceRow(cc))
+    #expect(isClockRow(clockRow))
+    #expect(!isClockRow(ccRow))
+}

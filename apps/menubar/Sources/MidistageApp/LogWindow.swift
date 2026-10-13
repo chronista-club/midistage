@@ -16,6 +16,7 @@ final class LogViewModel {
     var tab: LogTab = .flow
     var query = ""
     var hideLibrary = true
+    var hideClock = true      // クロック / Active Sensing の行（古いファイルに残っている分も）を隠す
 }
 
 private let timeFormat: DateFormatter = {
@@ -41,6 +42,8 @@ struct LogWindow: View {
                     .frame(maxWidth: 260)
                 if vm.tab == .flow {
                     Toggle("通信ライブラリの行を隠す", isOn: $vm.hideLibrary).toggleStyle(.checkbox)
+                } else {
+                    Toggle("クロックを隠す", isOn: $vm.hideClock).toggleStyle(.checkbox)
                 }
                 Spacer()
                 Toggle("追従", isOn: Binding(
@@ -60,7 +63,7 @@ struct LogWindow: View {
             Divider()
             switch vm.tab {
             case .flow: FlowList(tail: vm.flow, query: vm.query, hideLibrary: vm.hideLibrary)
-            case .trace: TraceTable(tail: vm.trace, query: vm.query, tracing: app.state.tracing)
+            case .trace: TraceTable(tail: vm.trace, query: vm.query, tracing: app.state.tracing, hideClock: vm.hideClock)
             }
         }
         .frame(minWidth: 820, minHeight: 360)
@@ -92,6 +95,7 @@ struct FlowList: View {
             .onChange(of: shown.last?.id) { _, last in
                 if tail.following, let last { proxy.scrollTo(last, anchor: .bottom) }
             }
+            .onAppear { if let last = shown.last?.id { proxy.scrollTo(last, anchor: .bottom) } }
         }
     }
 }
@@ -100,9 +104,11 @@ struct TraceTable: View {
     var tail: LogTail
     var query: String
     var tracing: Bool
+    var hideClock: Bool
 
     var body: some View {
         let rows = tail.lines.filter { matches($0, query: query) }.compactMap(traceRow)
+            .filter { !hideClock || !isClockRow($0) }
         if rows.isEmpty {
             VStack(spacing: 8) {
                 Spacer()
@@ -128,6 +134,7 @@ struct TraceTable: View {
                 .onChange(of: rows.last?.id) { _, last in
                     if tail.following, let last { proxy.scrollTo(last, anchor: .bottom) }
                 }
+                .onAppear { if let last = rows.last?.id { proxy.scrollTo(last, anchor: .bottom) } }
             }
         }
     }

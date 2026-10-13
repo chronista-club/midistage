@@ -132,3 +132,8 @@ public func splitCompleteLines(_ buffer: String) -> (lines: [String], remainder:
 public func newestLogFile(_ names: [String], prefix: String) -> String? {
     names.filter { $0.hasPrefix(prefix + ".") }.max()
 }
+
+/// クロック / Active Sensing の行（表で既定で隠す。サービスは記録時点で既定で省くが、古いファイルには残る）
+public func isClockRow(_ row: TraceRow) -> Bool {
+    row.kind == "clock" || row.kind == "active-sensing"
+}
