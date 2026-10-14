@@ -22,11 +22,11 @@ struct MidistageApp: App {
         Window("midistage — ステータス", id: "status") {
             StatusView(model: model)
         }
+        .defaultSize(width: 920, height: 480)
         Window("midistage — ログ", id: "log") {
             LogWindow(app: model, vm: logs)
         }
         .defaultSize(width: 980, height: 520)
-        .defaultSize(width: 920, height: 480)
     }
 }
 

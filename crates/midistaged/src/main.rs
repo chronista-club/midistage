@@ -53,34 +53,17 @@ async fn main() -> anyhow::Result<()> {
             // MIDI トレースは別ファイル（trace.log）。通常のログと stderr には混ぜない
             let (trace_file, trace_guard) =
                 tracing_appender::non_blocking(tracing_appender::rolling::daily(&dir, "trace.log"));
-            use tracing_subscriber::Layer;
-            use tracing_subscriber::filter::filter_fn;
             use tracing_subscriber::layer::SubscriberExt;
             use tracing_subscriber::util::SubscriberInitExt;
-            let not_trace = || filter_fn(|m| m.target() != midistaged::trace::TARGET);
+            let directives = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into());
             tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| "info".into()),
-                )
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .with_writer(std::io::stderr)
-                        .with_filter(not_trace()),
-                )
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .with_ansi(false)
-                        .with_writer(file)
-                        .with_filter(not_trace()),
-                )
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .with_ansi(false)
-                        .with_target(false)
-                        .with_writer(trace_file)
-                        .with_filter(filter_fn(|m| m.target() == midistaged::trace::TARGET)),
-                )
+                .with(midistaged::logging::layers(
+                    &directives,
+                    std::io::stderr,
+                    file,
+                    trace_file,
+                    tracing_subscriber::fmt::time::SystemTime,
+                ))
                 .init();
             Some((guard, trace_guard))
         }

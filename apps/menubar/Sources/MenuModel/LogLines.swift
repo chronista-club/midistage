@@ -121,11 +121,28 @@ public func matches(_ line: LogLine, query: String) -> Bool {
     return hay.localizedCaseInsensitiveContains(q)
 }
 
-/// 末尾を追いかけるときの行の切り出し。途中で切れた最後の行は残りとして返す
-public func splitCompleteLines(_ buffer: String) -> (lines: [String], remainder: String) {
-    var lines = buffer.components(separatedBy: "\n")
-    let remainder = lines.removeLast()
-    return (lines.filter { !$0.isEmpty }, remainder)
+/// 末尾を追いかけるときの行の切り出し。読んだ塊の境界は UTF-8 の文字の途中に来うる（→ は 3 バイト）ので、
+/// 文字列にする前にバイトのまま改行（0x0A）で切り、途中で切れた最後の行はバイトのまま次の塊とつなぐ
+public struct LineSplitter: Sendable {
+    private var pending = Data()
+
+    public init() {}
+
+    /// 塊を足し、完結した行（空行は除く）を返す
+    public mutating func push(_ chunk: Data) -> [String] {
+        pending.append(chunk)
+        var lines: [String] = []
+        var start = pending.startIndex
+        while let newline = pending[start...].firstIndex(of: 0x0A) {
+            if newline > start { lines.append(String(decoding: pending[start..<newline], as: UTF8.self)) }
+            start = pending.index(after: newline)
+        }
+        pending = Data(pending[start...])
+        return lines
+    }
+
+    /// 別のファイルに切り替わった（日付が変わった・切り詰められた）
+    public mutating func reset() { pending = Data() }
 }
 
 /// 最新のファイル（`midistaged.log.2026-10-13` のように日付が付く）を名前から選ぶ

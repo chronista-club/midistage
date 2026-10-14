@@ -59,10 +59,59 @@ import Testing
 }
 
 @Test func tailingKeepsTheUnfinishedLastLine() {
-    let (lines, rest) = splitCompleteLines("a\nb\nc-partial")
-    #expect(lines == ["a", "b"])
-    #expect(rest == "c-partial")
-    #expect(splitCompleteLines("a\n").remainder == "")
+    var splitter = LineSplitter()
+    #expect(splitter.push(Data("a\nb\nc-par".utf8)) == ["a", "b"])
+    #expect(splitter.push(Data("tial\n".utf8)) == ["c-partial"])
+    #expect(splitter.push(Data("\n\n".utf8)) == [], "空行は捨てる")
+}
+
+/// 読んだ塊の境界が UTF-8 の文字の途中に来ても、行は壊れない（→ は 3 バイト）
+@Test func aChunkBoundaryInsideAMultibyteCharacterDoesNotBreakTheLine() {
+    let line = #"2026-10-14T01:02:03.4Z  INFO FWD | B7 dir="dev→app" device=lpd8"#
+    let bytes = Array((line + "\n").utf8)
+    for cut in 1..<bytes.count {
+        var splitter = LineSplitter()
+        let first = splitter.push(Data(bytes[..<cut]))
+        let second = splitter.push(Data(bytes[cut...]))
+        #expect(first + second == [line], "cut at \(cut)")
+    }
+}
+
+/// サービスが書いた行の形（Rust の contract テストが作る fixture）を、app が読める
+@Test func theServiceLogContractIsReadable() throws {
+    let lines = try fixtureLines("log-contract.midistaged.log")
+    #expect(lines.count == 5, "全行が読める")
+    #expect(lines[0].target == "midistaged::runtime" && lines[0].level == .info)
+    #expect(lines[0].message == "session connected: vp (Vantage Point) native_midi=true")
+    #expect(lines[2].message.hasPrefix("lpd8: virtual ports opened for vp"))
+    #expect(lines[3].level == .warn && lines[3].target == "midistaged::service")
+    #expect(isLibraryNoise(lines[4]) && !isLibraryNoise(lines[0]))
+}
+
+@Test func theTraceContractIsReadable() throws {
+    let lines = try fixtureLines("log-contract.trace.log")
+    let rows = lines.compactMap(traceRow)
+    #expect(lines.count == 10 && rows.count == 8, "区切り 2 行以外は表の行になる")
+    let fwd = rows[0]
+    #expect(fwd.direction == "dev→app" && fwd.device == "lpd8" && fwd.app == "vp")
+    #expect(fwd.verdict == "FWD" && fwd.kind == "cc" && fwd.detail == "B7 4F 1F")
+    #expect(lines[1].fields["port"] == "LPD8 mk2")
+    #expect(rows[1].verdict == "DROP no lease" && isClockRow(rows[1]))
+    #expect(rows[2].direction == "app→svc" && rows[2].verdict == "QUEUE" && rows[2].kind == "note-on")
+    #expect(rows[3].verdict == "SENT" && rows[3].kind == "sysex" && rows[3].detail.hasSuffix("(44 bytes)"))
+    #expect(lines[4].fields["via"] == "SendMidi")
+    #expect(rows[4].verdict == "DROP stale lease" && lines[5].fields["via"] == "port")
+    #expect(rows[5].verdict == "OVERFLOW queue full; lease stopped" && rows[5].device == "keystage")
+    #expect(rows[6].verdict == "OPEN bridge" && rows[6].detail.contains("out [") && lines[7].fields["token"] == "boot:1")
+    #expect(rows[7].verdict == "CLOSE bridge" && rows[7].device == "lpd8")
+}
+
+private func fixtureLines(_ name: String) throws -> [LogLine] {
+    let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+        .appendingPathComponent("Fixtures").appendingPathComponent(name)
+    var splitter = LineSplitter()
+    let raw = splitter.push(try Data(contentsOf: url))
+    return raw.enumerated().compactMap { parseLogLine($1, id: $0) }
 }
 
 @Test func newestDailyFileIsChosenByName() {

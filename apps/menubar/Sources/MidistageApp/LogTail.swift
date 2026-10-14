@@ -13,7 +13,7 @@ final class LogTail {
 
     private var file: String?
     private var offset: UInt64 = 0
-    private var remainder = ""
+    private var splitter = LineSplitter()
     private var nextID = 0
     private var timer: Timer?
     private var dir: URL { FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/midistaged") }
@@ -41,15 +41,14 @@ final class LogTail {
             // 新しい日付のファイル、または切り詰められた。開いた直後は末尾 256 KiB だけ読む
             file = newest
             offset = initial ? (size > 262_144 ? size - 262_144 : 0) : 0
-            remainder = ""
+            splitter.reset()
         }
         guard size > offset, let handle = try? FileHandle(forReadingFrom: url) else { return }
         defer { try? handle.close() }
         try? handle.seek(toOffset: offset)
         guard let data = try? handle.readToEnd() else { return }
         offset += UInt64(data.count)
-        let (raw, rest) = splitCompleteLines(remainder + String(decoding: data, as: UTF8.self))
-        remainder = rest
+        let raw = splitter.push(data)
         var added: [LogLine] = []
         for r in raw {
             nextID += 1

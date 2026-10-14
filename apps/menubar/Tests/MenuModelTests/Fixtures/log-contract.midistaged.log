@@ -1,0 +1,5 @@
+2026-10-14T01:02:03.456789Z  INFO midistaged::runtime: session connected: vp (Vantage Point) native_midi=true
+2026-10-14T01:02:03.456789Z  INFO midistaged::runtime: lpd8: lease granted to vp (boot:1)
+2026-10-14T01:02:03.456789Z  INFO midistaged::native: lpd8: virtual ports opened for vp (boot:1) | in ["Midistage/vp/boot:1/11 | LPD8 mk2"] | out []
+2026-10-14T01:02:03.456789Z  WARN midistaged::service: request SetEnabled from vp rejected: state changed since confirmation
+2026-10-14T01:02:03.456789Z  INFO unison::network::quic: New QUIC connection from: [::1]:50000

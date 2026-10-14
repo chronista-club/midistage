@@ -43,9 +43,52 @@ pub fn refresh(state_dir: &Path) -> bool {
     let was = ENABLED.swap(want, Ordering::Relaxed);
     if was != want {
         tracing::info!("MIDI trace {}", if want { "on" } else { "off" });
-        tracing::info!(target: TARGET, "---- MIDI trace {} ----", if want { "on" } else { "off" });
+        marker(want);
     }
     was != want
+}
+
+// 以下は記録点ごとの 1 行。呼ぶ側が `enabled()` を見てから呼ぶ（オフのときは関数呼び出しもしない）。
+// 行の形は app のログ window が読む契約（logging.rs の contract テストと
+// apps/menubar/Tests/MenuModelTests/Fixtures/log-contract.trace.log で固定）
+
+/// トレースの開始・停止の区切り行
+#[cold]
+pub fn marker(on: bool) {
+    tracing::info!(target: TARGET, "---- MIDI trace {} ----", if on { "on" } else { "off" });
+}
+
+/// 仮想ポート / 物理ポートを通った 1 メッセージ（機材→app の転送・破棄、app→サービスの受理）
+#[cold]
+pub fn port_line(dir: &str, device: &str, app: &str, port: &str, verdict: &str, bytes: &[u8]) {
+    tracing::info!(target: TARGET, dir, device = %device, app = %app, port = %port, kind = describe(bytes),
+        "{verdict} | {}", format_bytes(bytes));
+}
+
+/// サービスから機材へ送った 1 メッセージ。`via` は仮想ポート経由（port）か SendMidi か
+#[cold]
+pub fn send_line(device: &str, app: &str, via: &str, verdict: &str, bytes: &[u8]) {
+    tracing::info!(target: TARGET, dir = "svc→dev", device = %device, app = %app, via, kind = describe(bytes),
+        "{verdict} | {}", format_bytes(bytes));
+}
+
+/// app→サービスの送信待ちが溢れた（lease はこの後止まる）
+#[cold]
+pub fn overflow(device: &str, app: &str) {
+    tracing::info!(target: TARGET, dir = "app→svc", device = %device, app = %app, "OVERFLOW queue full; lease stopped");
+}
+
+/// 仮想ポートを開いた（lease が app に渡った）
+#[cold]
+pub fn bridge_open(device: &str, app: &str, token: &str, inputs: &[String], outputs: &[String]) {
+    tracing::info!(target: TARGET, device = %device, app = %app, token = %token,
+        "OPEN bridge | in {inputs:?} | out {outputs:?}");
+}
+
+/// 仮想ポートを閉じた
+#[cold]
+pub fn bridge_close(device: &str, token: &str) {
+    tracing::info!(target: TARGET, device = %device, token = %token, "CLOSE bridge");
 }
 
 /// MIDI のバイト列を 1 行に。長い SysEx は頭と尾だけ残して長さを添える（純粋）
