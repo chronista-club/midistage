@@ -135,6 +135,32 @@ def expanded(spec):
     return out
 
 
+# ---- 高さ -------------------------------------------------------------------
+
+def _r(v):
+    """mm を 0.01 で丸める（JSON の差分を読みやすく保つ）"""
+    return round(v * 100) / 100
+
+
+def scale_heights(spec, factor):
+    """縦の推定（筐体の厚み、部品の乗る高さと高さ、鍵盤の床と高さ）を同じ比率で伸ばした写し。
+    全高 `size` は公式の仕様値（事実）なので触らない。平面の位置・大きさも触らない"""
+    out = json.loads(json.dumps(spec))
+    if "body_height" in out:
+        out["body_height"] = _r(out["body_height"] * factor)
+    for p in out.get("parts", []):
+        if len(p.get("size", [])) > 2:
+            p["size"][2] = _r(p["size"][2] * factor)
+        if "base" in p:
+            p["base"] = _r(p["base"] * factor)
+    kb = out.get("keybed")
+    if kb:
+        for key in ("height", "base"):
+            if key in kb:
+                kb[key] = _r(kb[key] * factor)
+    return out
+
+
 # ---- 読み書き ---------------------------------------------------------------
 
 def load(root, gear_id):
