@@ -157,7 +157,7 @@ def manifest(dist, source_commit, gear_ids):
     gear = {}
     for gid in gear_ids:
         files = {}
-        for ext in ("usdz", "glb", "json"):
+        for ext in ("usdz", "glb", "json", "blend"):
             path = os.path.join(dist, f"{gid}.{ext}")
             if os.path.exists(path):
                 files[ext] = {"sha256": sha256(path), "bytes": os.path.getsize(path)}

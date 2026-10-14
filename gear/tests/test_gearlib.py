@@ -93,6 +93,16 @@ class Manifest(unittest.TestCase):
             self.assertEqual(set(m["gear"]["lpd8"]), {"usdz", "glb", "json"})
             self.assertEqual(len(m["gear"]["lpd8"]["glb"]["sha256"]), 64)
 
+    def test_manifest_includes_blend_when_shipped(self):
+        """見た目の層もアプリの Blender シーン（机・棚）がリンクできるよう配布物に置く"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("lpd8.usdz", "lpd8.blend"):
+                with open(os.path.join(d, name), "wb") as f:
+                    f.write(b"x")
+            m = gearlib.manifest(d, source_commit="abc1234", gear_ids=["lpd8"])
+            self.assertIn("blend", m["gear"]["lpd8"])
+
 
 if __name__ == "__main__":
     unittest.main()
