@@ -29,7 +29,27 @@ pub struct Runtime {
 }
 impl Runtime {
     pub fn new(mut broker: Broker, store: SettingsStore) -> anyhow::Result<Self> {
-        let saved = store.load()?;
+        let mut saved = store.load()?;
+        // profile ができる前に汎用として覚えた機材は、今は profile の ID で出る。残すと同じ機材が 2 つ並ぶ。
+        // 担当は profile 側を正とし、汎用の記録は保存先からも消す
+        let stale: Vec<String> = saved
+            .devices
+            .keys()
+            .filter(|id| crate::inventory::superseded_generic(id))
+            .cloned()
+            .collect();
+        if !stale.is_empty() {
+            saved.devices.retain(|id, _| !stale.contains(id));
+            match store.save(&saved) {
+                Ok(()) => {
+                    tracing::info!("dropped generic devices now recognized by a profile: {stale:?}")
+                }
+                // 保存できなくても、この起動では出さない（次の起動でまた消す）
+                Err(error) => tracing::warn!(
+                    "could not drop generic devices {stale:?} from settings: {error}"
+                ),
+            }
+        }
         for (id, device) in &saved.devices {
             if !broker.devices.contains_key(id) {
                 broker.add_device(id, &device.profile_id, false);
@@ -376,6 +396,59 @@ mod tests {
         assert!(
             r.first_send_rejection("b", "nano", "stale_lease"),
             "切断で忘れる"
+        );
+    }
+    #[test]
+    fn a_generic_entry_left_from_before_its_profile_existed_is_dropped() {
+        use crate::settings::{SavedDevice, SavedSettings};
+        let dir = tempfile::tempdir().unwrap();
+        let saved = |profile: &str, name: &str, client: Option<&str>, revision| SavedDevice {
+            profile_id: profile.into(),
+            name: name.into(),
+            assignment: midistage_protocol::Assignment {
+                client_id: client.map(Into::into),
+                revision,
+                expected: false,
+            },
+        };
+        SettingsStore::new(dir.path())
+            .save(&SavedSettings {
+                version: 1,
+                devices: [
+                    ("zenith2".into(), saved("zenith2", "Zenith 2", None, 0)),
+                    // profile ができる前の記録。担当が残っていても profile 側を正とする
+                    (
+                        "generic:zenith 2".into(),
+                        saved("generic", "Zenith 2", Some("vp"), 4),
+                    ),
+                    (
+                        "generic:studio keyboard midi".into(),
+                        saved("generic", "Studio Keyboard MIDI", Some("ladyland"), 1),
+                    ),
+                ]
+                .into(),
+                initialized_clients: Default::default(),
+            })
+            .unwrap();
+        let r = runtime(dir.path());
+        assert!(!r.broker.devices.contains_key("generic:zenith 2"));
+        assert!(r.broker.devices.contains_key("zenith2"));
+        assert_eq!(r.broker.devices["zenith2"].assignment.client_id, None);
+        assert_eq!(
+            r.broker.devices["generic:studio keyboard midi"]
+                .assignment
+                .client_id
+                .as_deref(),
+            Some("ladyland"),
+            "profile の無い汎用の機材はそのまま"
+        );
+        // 保存先からも消える（次の起動でも出ない）
+        let reloaded = SettingsStore::new(dir.path()).load().unwrap();
+        assert!(!reloaded.devices.contains_key("generic:zenith 2"));
+        assert!(
+            reloaded
+                .devices
+                .contains_key("generic:studio keyboard midi")
         );
     }
     #[test]
