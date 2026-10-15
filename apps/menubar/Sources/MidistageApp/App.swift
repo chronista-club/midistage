@@ -10,10 +10,11 @@ let log = Logger(subsystem: "club.chronista.midistage", category: "menubar")
 @main
 struct MidistageApp: App {
     @State private var model = AppModel()
+    @State private var logs = LogViewModel()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContent(model: model)
+            MenuContent(model: model, logs: logs)
         } label: {
             Image(systemName: model.summary.icon.symbol)
         }
@@ -22,6 +23,10 @@ struct MidistageApp: App {
             StatusView(model: model)
         }
         .defaultSize(width: 920, height: 480)
+        Window("midistage — ログ", id: "log") {
+            LogWindow(app: model, vm: logs)
+        }
+        .defaultSize(width: 980, height: 520)
     }
 }
 
@@ -48,14 +53,22 @@ extension Icon {
 
 @MainActor @Observable
 final class AppModel {
-    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
+    var state = ServiceState(registration: Residency.registration(), running: .stopped, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn())
     var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
     private let probe = ServiceProbe()
     private var task: Task<Void, Never>?
 
-    init() { start() }
+    init() {
+        start()
+        // 終了時に接続を閉じる（閉じないとサービスに約 30 秒セッションが残る）
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: nil) { [probe] _ in
+            let done = DispatchSemaphore(value: 0)
+            Task.detached { await probe.close(); done.signal() }
+            _ = done.wait(timeout: .now() + 1.0)
+        }
+    }
 
     func start() {
         task = Task { [weak self] in
@@ -69,7 +82,7 @@ final class AppModel {
     func refresh() async {
         let result = await probe.probe()
         rows = statusRows(result.devices)
-        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin())
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn())
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
@@ -85,6 +98,7 @@ final class AppModel {
 
 struct MenuContent: View {
     var model: AppModel
+    var logs: LogViewModel
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -109,7 +123,25 @@ struct MenuContent: View {
         }
         Divider()
         Button("ステータスを開く") { openWindow(id: "status"); NSApp.activate(ignoringOtherApps: true) }
+        Divider()
         Button("ログを開く") {
+            logs.tab = .flow
+            openWindow(id: "log"); NSApp.activate(ignoringOtherApps: true)
+        }
+        if model.state.tracing {
+            Button("MIDI トレースを見る") {
+                logs.tab = .trace
+                openWindow(id: "log"); NSApp.activate(ignoringOtherApps: true)
+            }
+            Button("MIDI トレースを止める") { model.act(MidiTrace.stop) }
+        } else {
+            Button("MIDI トレースを開始（開発用）") {
+                model.act(MidiTrace.start)
+                logs.tab = .trace
+                openWindow(id: "log"); NSApp.activate(ignoringOtherApps: true)
+            }
+        }
+        Button("ログのフォルダを開く") {
             let logs = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/midistaged")
             NSWorkspace.shared.open(logs)
         }

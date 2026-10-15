@@ -140,6 +140,15 @@ midistage.app/Contents/
 0. **メニューバー .app**: `MenuBarExtra` + `SMAppService` の登録・解除・状態表示 + 同梱 midistaged + `build-app.sh`（ad-hoc 署名で `--install` まで）。midistaged に `--log-dir` のファイルログ。wire に `service_version` / `executable` を追加
 0b. **署名・公証**: `--dist` / `--publish` を通し、v0.1.0 として DMG を出す（mako の Mac で `--install` → ログイン項目の承認 → 再起動後に常駐しているかを実機確認）
 
+## MIDI トレース（REQ-APP-050〜052）
+
+- `crates/midistaged/src/trace.rs`: `ENABLED: AtomicBool`、`refresh(state_dir)`（フラグファイル / 環境変数）、`format_bytes` / `describe`（純粋、テスト）。tracing の target `midistage_trace` に `info!` で書く
+- 記録点（`native.rs`）: 物理入力コールバック（`FWD` / `DROP no lease`）、仮想 destination（`QUEUE` / `OVERFLOW`）、送信 worker（`SENT` / `DROP stale lease` / `FAIL`、`via=port|SendMidi`）、`NativeBridge::open` / `Drop`（`OPEN` / `CLOSE bridge`）
+- `main.rs`: target で層を分ける — stderr と `midistaged.log` は `midistage_trace` を除外、`trace.log` はそれだけ。worker loop が 20 tick（1 秒）ごとに `refresh`
+- app: `MidiTrace`（フラグの作成・削除、最新 trace.log を開く）、`ServiceState.tracing` で注意を出す
+- **info の流れ**（REQ-APP-053）: `crates/midistaged/src/flow.rs` の `changes(before, after, name_of)`（純粋、テスト）が Broker の前後を機材ごとに 1 行へ。`Runtime` は「最後に出した状態」`flow_seen` と session → app 名を持ち、`log_flow()` がそこからの差分を出して更新する（重複も取りこぼしもしない）。呼ぶのは 要求の処理（`dispatch`、Snapshot 以外）・切断・poll の終わり・I/O 障害。仮想ポートの開閉は `NativeBridge` が直接 info に
+- 次の段: app に「トレース」窓を足して流して見る（サービス → app に流す口が要る = wire 拡張）。今はファイル
+
 ## 未決
 
 - 表示名（display_name）と **bundle id** を snapshot の担当 / lease に載せる wire 拡張（design 03 側）。今は client_id と bundle id の末尾一致（`vp` ↔ `tech.anycreative.vp`）でアイコンを引いている（`AppIcons`）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で

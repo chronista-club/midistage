@@ -7,4 +7,7 @@ pub mod runtime;
 pub mod service;
 pub mod settings;
 
+pub mod flow;
+pub mod logging;
 pub mod paths;
+pub mod trace;

@@ -21,6 +21,8 @@ let package = Package(
             name: "MidistageApp",
             dependencies: ["MenuModel", .product(name: "MidistageClient", package: "MidistageClient")],
             path: "Sources/MidistageApp"),
-        .testTarget(name: "MenuModelTests", dependencies: ["MenuModel"], path: "Tests/MenuModelTests"),
+        .testTarget(name: "MenuModelTests", dependencies: ["MenuModel"], path: "Tests/MenuModelTests",
+                    // サービスのログの形（Rust の contract テストが書く）。#filePath から読む
+                    exclude: ["Fixtures"]),
     ]
 )
