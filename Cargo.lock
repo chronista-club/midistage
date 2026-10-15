@@ -410,20 +410,19 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 
 [[package]]
 name = "club-kdl"
-version = "0.12.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42e7a262c2e8e1ecc2c38fb832c222019b30b00121c4b3e8b6a8abcafc066bda"
+checksum = "5fb1444af823cb4c6fe4345ca00c85263176b5e2c8285fcca92829d78d513a18"
 dependencies = [
  "club-kdl-derive",
- "kdl",
  "thiserror 2.0.21",
 ]
 
 [[package]]
 name = "club-kdl-derive"
-version = "0.12.0"
+version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ee2a2d5239510b5ddc2465a97178f88891e684da6e254dedae875f5acc82e2e"
+checksum = "b6808fcdb6992084b0784d72e62934509050772a5b9b45cdaafac4799d7b6a3c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -432,9 +431,9 @@ dependencies = [
 
 [[package]]
 name = "club-unison"
-version = "2.0.0"
+version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "598d9d04fd532c3311cd5c27f216bb140050abbfdb71cac1ae0cd404cf4ddc7d"
+checksum = "787a2008e793a21c4a62c0e3a320efc635e7a95ef5f0b3342a62e67bd698d5f2"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -444,7 +443,6 @@ dependencies = [
  "chrono",
  "club-kdl",
  "futures-util",
- "kdl",
  "quinn",
  "rcgen",
  "rustls",
@@ -1037,18 +1035,6 @@ dependencies = [
  "cfg-if",
  "futures-util",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "kdl"
-version = "6.7.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "082ddf81b2acd76fe04412655d17befedfff1837db772f8e74c38050d25ed670"
-dependencies = [
- "miette",
- "num-traits",
- "serde",
- "winnow",
 ]
 
 [[package]]
@@ -2759,15 +2745,6 @@ name = "windows_x86_64_msvc"
 version = "0.52.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "589f6da84c646204747d1270a2a5661ea66ed1cced2631d546fdfb155959f9ec"
-
-[[package]]
-name = "winnow"
-version = "0.7.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
-dependencies = [
- "memchr",
-]
 
 [[package]]
 name = "writeable"
