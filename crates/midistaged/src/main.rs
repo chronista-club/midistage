@@ -106,6 +106,9 @@ async fn main() -> anyhow::Result<()> {
                     return Ok(());
                 }
             };
+            // CoreMIDI に触る前に。後から挿された機材を拾うための run loop（native.rs）
+            #[cfg(target_os = "macos")]
+            midistaged::native::start_notify_thread();
             let mut broker = Broker::new(uuid::Uuid::new_v4().to_string());
             for (id, name) in PROFILES {
                 broker.add_device(id, id, false);

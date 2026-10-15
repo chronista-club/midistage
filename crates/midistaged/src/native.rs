@@ -676,3 +676,49 @@ impl NativeRuntime {
             .log_flow();
     }
 }
+
+/// CoreMIDI の通知 thread を立てる（冪等）。**serve の最初の CoreMIDI 呼び出しより前に**呼ぶ。
+///
+/// CoreMIDI は endpoint 一覧の cache を process 内に持ち、その更新通知を、process で最初に
+/// `MIDIClientCreate` した thread の run loop にだけ届ける。run loop の回っていない thread で
+/// 列挙だけしていると一覧が凍り、抜いた機材は消えても、差し直した機材が戻らない
+/// （2026-10-16 LPD8 mk2、VP PR #1211 で同じ実測。2 番目以降の client では効かない）。
+/// そこで専用 thread で最初の client を作り、run loop を回し続ける。client が作れたかを返す
+pub fn start_notify_thread() -> bool {
+    static STARTED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *STARTED.get_or_init(|| {
+        #[link(name = "CoreFoundation", kind = "framework")]
+        unsafe extern "C" {
+            fn CFRunLoopRun();
+        }
+        let (ready, created) = mpsc::sync_channel::<bool>(1);
+        let spawned = thread::Builder::new()
+            .name("coremidi-notify".into())
+            .spawn(move || {
+                // この client が通知の宛先。thread の寿命いっぱい持つ（drop すると宛先が消える）
+                let client = Client::new("Midistage notify");
+                let _ = ready.send(client.is_ok());
+                let Ok(_client) = client else { return };
+                loop {
+                    // SAFETY: 引数なし。この thread の run loop を回すだけ
+                    unsafe { CFRunLoopRun() };
+                    // source が一時的に無いと即 return しうる。空回りしないよう間を置いて回し直す
+                    thread::sleep(std::time::Duration::from_millis(500));
+                }
+            });
+        if let Err(error) = spawned {
+            tracing::warn!("CoreMIDI notify thread could not start: {error}; replugged devices will not be seen");
+            return false;
+        }
+        match created.recv_timeout(std::time::Duration::from_secs(2)) {
+            Ok(true) => {
+                tracing::info!("CoreMIDI notify thread started (replugged devices are picked up)");
+                true
+            }
+            _ => {
+                tracing::warn!("CoreMIDI notify thread has no client; replugged devices will not be seen");
+                false
+            }
+        }
+    })
+}
