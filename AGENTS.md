@@ -112,6 +112,13 @@ profile は KDL（`~/.config/midistage/<profile>.kdl`）。KORG Scene Data (500 
 - data / calculations / actions を分離
 - KORG protocol は `Keystage_MIDIimp.txt` (cplp-sound-system の docs/midi/Keystage/ にコピーあり) を SSOT として参照する。KORG 公式 docs そのものはこのリポジトリに入れない（公開リポジトリのため）
 
+## ブランチとリリース
+
+- 開発の受け口は `nightly`。作業ブランチは `nightly` から切り、PR も `nightly` へ向ける
+- `main` はリリースした版。リリースのときだけ `nightly` → `main` の PR を入れ、`main` で tag（`vX.Y.Z`）を打つ
+- 配布物は tag の上で `scripts/build-app.sh --publish`（公証済み DMG を GitHub Release に添付）
+- リリース前に `nightly` の版を `scripts/build-app.sh --install --run` で手元に入れ、実機で確かめる
+
 ## 開発フロー (creo-memories first)
 
 - 設計決定 / 調査結果 / 罠の知見は **creo-memories の midistage Atlas** に保存 (`atlasId: "atl_1CahBrpoKgKy1WbiNpzD8w"`)
