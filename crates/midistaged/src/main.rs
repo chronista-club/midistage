@@ -88,7 +88,11 @@ async fn main() -> anyhow::Result<()> {
         Command::RotoDump { out, port } => {
             #[cfg(target_os = "macos")]
             {
-                let dump = midistaged::roto_admin::read_all(port.as_deref())?;
+                // 同期 I/O（最大 2 分弱）。async の runtime を塞がない
+                let dump = tokio::task::spawn_blocking(move || {
+                    midistaged::roto_admin::read_all(port.as_deref())
+                })
+                .await??;
                 std::fs::write(&out, serde_json::to_vec_pretty(&dump)?)?;
                 let free: Vec<_> = dump
                     .setups

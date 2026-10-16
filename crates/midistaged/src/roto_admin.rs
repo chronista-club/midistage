@@ -8,8 +8,12 @@
 //!   close で即復帰）。開く → 用事 → 閉じる を短く。開きっぱなしにしない — [`with_port`] が閉じる
 //! - リクエストは 1 本ずつ
 //! - ポートは VID/PID（0x2E8A / 0xF010）で Roto のものだけに絞る。maru など別の RP2040 機材
-//!   （同じ VID でありうる）に問い合わせを撃たない。Roto は 2 本出し、1 本目が admin、2 本目は
-//!   文字を流すデバッグ用。若い USB インターフェースから順に GET FW VERSION で確かめる
+//!   （同じ VID でありうる）に問い合わせを撃たない。Roto は 2 本出し、若い USB インターフェースが admin、
+//!   もう 1 本は文字を流すデバッグ用。**問い合わせるのは admin の 1 本だけ**
+//! - Roto が 2 台以上あれば推測しない。`--port` で指定されない限りエラー
+//! - 他のプロセスと同じポートに書かない。排他 open（O_EXLOCK + TIOCEXCL）。どちらも相手が守って
+//!   いる前提の仕組みで、排他を使わずに先に開いているプロセス（ROTO-SETUP など）は検出できない
+//! - **すべて同期（ブロックする）**。async の中から直接呼ばない — `spawn_blocking` か専用 thread で
 //! - いまは **読み取りだけ**。書き込みは報告と GO の後
 
 use midistage_profiles::roto_serial::{self as rs, Event, Parser};
@@ -26,16 +30,56 @@ pub struct SerialPort {
     pub vendor: Option<u16>,
     pub product: Option<u16>,
     pub interface: Option<u8>,
+    /// USB の locationID（どの差し口の機材か。同じ機材のポートは同じ値）
+    pub location: Option<u32>,
 }
 
-/// Roto のポートだけを、USB インターフェースの若い順に（純粋）
-pub fn roto_candidates(ports: &[SerialPort]) -> Vec<String> {
-    let mut roto: Vec<_> = ports
+/// Roto の admin port を 1 本に決める（純粋）。Roto が無い・2 台以上ならエラー（推測しない）。
+/// 1 台なら、その機材のいちばん若い USB インターフェースのポート（もう 1 本は debug console）
+pub fn admin_port(ports: &[SerialPort]) -> Result<String, String> {
+    let mut devices: std::collections::BTreeMap<Option<u32>, Vec<&SerialPort>> = Default::default();
+    for p in ports
         .iter()
         .filter(|p| p.vendor == Some(VENDOR) && p.product == Some(PRODUCT))
-        .collect();
-    roto.sort_by_key(|p| (p.interface.unwrap_or(u8::MAX), p.path.clone()));
-    roto.into_iter().map(|p| p.path.clone()).collect()
+    {
+        devices.entry(p.location).or_default().push(p);
+    }
+    let lowest = |ps: &[&SerialPort]| {
+        ps.iter()
+            .min_by_key(|p| (p.interface.unwrap_or(u8::MAX), p.path.clone()))
+            .map(|p| p.path.clone())
+    };
+    match devices.len() {
+        0 => Err("no ROTO-CONTROL serial port (VID 2E8A / PID F010)".into()),
+        1 => devices
+            .values()
+            .next()
+            .and_then(|ps| lowest(ps))
+            .ok_or_else(|| "no ROTO-CONTROL serial port".into()),
+        n => Err(format!(
+            "{n} ROTO-CONTROL devices are connected ({}); choose one with --port",
+            devices
+                .values()
+                .filter_map(|ps| lowest(ps))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )),
+    }
+}
+
+/// 席を読んだ応答コードの意味（純粋）。FD だけが「未設定」、それ以外の失敗はエラー
+#[derive(Debug, PartialEq, Eq)]
+pub enum Seat {
+    Configured,
+    Empty,
+    Error(u8),
+}
+pub fn seat_outcome(code: u8) -> Seat {
+    match code {
+        rs::RC_OK => Seat::Configured,
+        rs::RC_UNCONFIGURED => Seat::Empty,
+        other => Seat::Error(other),
+    }
 }
 
 /// 読み取りの結果（JSON に保存する形）
@@ -61,14 +105,20 @@ pub struct SetupDump {
     /// 未設定（FD）だった席の番号
     pub empty_knobs: Vec<u8>,
     pub empty_switches: Vec<u8>,
+    /// FD 以外で読めなかったもの（一時的な失敗を空き席と取り違えないため）
+    pub errors: Vec<String>,
 }
 impl SetupDump {
     /// 空き席: setup 自体が未設定か、席が全部空で名前が工場出荷のまま（`SETUP <番号+1>`）か空（純粋）
     pub fn is_free(&self) -> bool {
         let factory_name = format!("SETUP {:02}", self.index as u16 + 1);
         let name = self.name.as_deref().unwrap_or("");
+        if !self.errors.is_empty() {
+            return false;
+        }
         self.code == rs::RC_UNCONFIGURED
-            || (self.knobs.is_empty()
+            || (self.code == rs::RC_OK
+                && self.knobs.is_empty()
                 && self.switches.is_empty()
                 && (name.is_empty() || name == factory_name))
     }
@@ -126,41 +176,25 @@ mod port {
     }
 
     fn open(path: Option<&str>) -> anyhow::Result<Session> {
-        let candidates = match path {
-            Some(p) => vec![p.to_owned()],
-            None => roto_candidates(&list_serial_ports()),
+        let path = match path {
+            Some(p) => p.to_owned(),
+            None => admin_port(&list_serial_ports()).map_err(anyhow::Error::msg)?,
         };
-        anyhow::ensure!(
-            !candidates.is_empty(),
-            "no ROTO-CONTROL serial port (VID 2E8A / PID F010)"
-        );
-        let mut tried = Vec::new();
-        for path in candidates {
-            match open_serial(&path) {
-                Ok(fd) => {
-                    let mut parser = Parser::default();
-                    parser.expect(rs::reply_len::FW_VERSION);
-                    if write_all(fd.as_raw_fd(), &rs::get_fw_version()).is_ok()
-                        && let Some(firmware) = await_version(fd.as_raw_fd(), &mut parser)
-                    {
-                        return Ok(Session {
-                            fd,
-                            path,
-                            firmware,
-                            parser,
-                            requests: 1,
-                            notifications: Vec::new(),
-                        });
-                    }
-                    tried.push(format!("{path}: no reply"));
-                }
-                Err(e) => tried.push(format!("{path}: {e}")),
-            }
-        }
-        anyhow::bail!(
-            "no admin port answered GET FW VERSION ({})",
-            tried.join(", ")
-        )
+        let fd = open_serial(&path)?;
+        let mut parser = Parser::default();
+        parser.expect(rs::reply_len::FW_VERSION);
+        write_all(fd.as_raw_fd(), &rs::get_fw_version())?;
+        let firmware = await_version(fd.as_raw_fd(), &mut parser).ok_or_else(|| {
+            anyhow::anyhow!("{path}: no reply to GET FW VERSION (is this the admin port?)")
+        })?;
+        Ok(Session {
+            fd,
+            path,
+            firmware,
+            parser,
+            requests: 1,
+            notifications: Vec::new(),
+        })
     }
 
     fn await_version(fd: i32, parser: &mut Parser) -> Option<rs::FwVersion> {
@@ -182,15 +216,27 @@ mod port {
 
     fn open_serial(path: &str) -> anyhow::Result<OwnedFd> {
         let c = std::ffi::CString::new(path)?;
-        let raw =
-            unsafe { libc::open(c.as_ptr(), libc::O_RDWR | libc::O_NOCTTY | libc::O_NONBLOCK) };
+        // O_EXLOCK: 同じく排他で開くプロセス（別の midistaged、roto-dump など）とは、後から来た方が EBUSY
+        let raw = unsafe {
+            libc::open(
+                c.as_ptr(),
+                libc::O_RDWR | libc::O_NOCTTY | libc::O_NONBLOCK | libc::O_EXLOCK,
+            )
+        };
         if raw < 0 {
-            anyhow::bail!("{}", std::io::Error::last_os_error());
+            let error = std::io::Error::last_os_error();
+            if matches!(
+                error.raw_os_error(),
+                Some(libc::EBUSY) | Some(libc::EWOULDBLOCK)
+            ) {
+                anyhow::bail!("{path} is in use by another process (EBUSY)");
+            }
+            anyhow::bail!("{path}: {error}");
         }
         let fd = unsafe { OwnedFd::from_raw_fd(raw) };
-        // 排他 open。2 本目の open は EBUSY になり、応答が混線しない
+        // TIOCEXCL: この後の open（排他を使わないものも）を EBUSY に
         if unsafe { libc::ioctl(raw, libc::TIOCEXCL as libc::c_ulong) } != 0 {
-            anyhow::bail!("TIOCEXCL: {}", std::io::Error::last_os_error());
+            anyhow::bail!("{path}: TIOCEXCL: {}", std::io::Error::last_os_error());
         }
         let mut tty: libc::termios = unsafe { std::mem::zeroed() };
         if unsafe { libc::tcgetattr(raw, &mut tty) } != 0 {
@@ -204,6 +250,8 @@ mod port {
         if unsafe { libc::tcsetattr(raw, libc::TCSANOW, &tty) } != 0 {
             anyhow::bail!("tcsetattr: {}", std::io::Error::last_os_error());
         }
+        // 前に残ったバイトを最初の応答と取り違えない
+        unsafe { libc::tcflush(raw, libc::TCIOFLUSH) };
         Ok(fd)
     }
 
@@ -258,16 +306,33 @@ mod port {
                     switches: Vec::new(),
                     empty_knobs: Vec::new(),
                     empty_switches: Vec::new(),
+                    errors: Vec::new(),
                 };
+                if let Seat::Error(rc) = seat_outcome(code) {
+                    setup.errors.push(format!("setup: rc={rc:02X}"));
+                }
                 if code == rs::RC_OK {
                     for c in 0..rs::CONTROLS {
-                        match s.transact(&rs::get_knob(index, c), rs::reply_len::KNOB)? {
-                            (rs::RC_OK, d) => setup.knobs.extend(rs::Knob::parse(&d)),
-                            _ => setup.empty_knobs.push(c),
+                        let (code, d) = s.transact(&rs::get_knob(index, c), rs::reply_len::KNOB)?;
+                        match seat_outcome(code) {
+                            Seat::Configured => match rs::Knob::parse(&d) {
+                                Some(k) => setup.knobs.push(k),
+                                None => setup.errors.push(format!("knob {c}: short reply")),
+                            },
+                            Seat::Empty => setup.empty_knobs.push(c),
+                            Seat::Error(rc) => setup.errors.push(format!("knob {c}: rc={rc:02X}")),
                         }
-                        match s.transact(&rs::get_switch(index, c), rs::reply_len::SWITCH)? {
-                            (rs::RC_OK, d) => setup.switches.extend(rs::Switch::parse(&d)),
-                            _ => setup.empty_switches.push(c),
+                        let (code, d) =
+                            s.transact(&rs::get_switch(index, c), rs::reply_len::SWITCH)?;
+                        match seat_outcome(code) {
+                            Seat::Configured => match rs::Switch::parse(&d) {
+                                Some(w) => setup.switches.push(w),
+                                None => setup.errors.push(format!("switch {c}: short reply")),
+                            },
+                            Seat::Empty => setup.empty_switches.push(c),
+                            Seat::Error(rc) => {
+                                setup.errors.push(format!("switch {c}: rc={rc:02X}"))
+                            }
                         }
                     }
                 }
@@ -374,6 +439,7 @@ mod port {
                         product: number(property(entry, "idProduct", true)).map(|v| v as u16),
                         interface: number(property(entry, "bInterfaceNumber", true))
                             .map(|v| v as u8),
+                        location: number(property(entry, "locationID", true)).map(|v| v as u32),
                     });
                 }
                 IOObjectRelease(entry);
@@ -388,33 +454,59 @@ mod port {
 mod tests {
     use super::*;
 
-    fn port(path: &str, vendor: u16, product: u16, interface: u8) -> SerialPort {
+    fn port(path: &str, product: u16, interface: u8, location: u32) -> SerialPort {
         SerialPort {
             path: path.into(),
-            vendor: Some(vendor),
+            vendor: Some(VENDOR),
             product: Some(product),
             interface: Some(interface),
+            location: Some(location),
         }
     }
 
     #[test]
-    fn only_roto_ports_are_candidates_admin_first() {
+    fn the_admin_port_is_the_lowest_interface_of_the_one_roto() {
         let ports = [
-            port("/dev/cu.usbmodem1403", VENDOR, PRODUCT, 3),
-            port("/dev/cu.usbmodem1401", VENDOR, PRODUCT, 1),
+            port("/dev/cu.usbmodem1403", PRODUCT, 3, 0x0140_0000),
+            port("/dev/cu.usbmodem1401", PRODUCT, 1, 0x0140_0000),
             // 同じ Raspberry Pi の VID の別機材（maru など）には問い合わせない
-            port("/dev/cu.usbmodem2101", VENDOR, 0x000A, 1),
+            port("/dev/cu.usbmodem2101", 0x000A, 1, 0x0210_0000),
             SerialPort {
                 path: "/dev/cu.Bluetooth-Incoming-Port".into(),
                 vendor: None,
                 product: None,
                 interface: None,
+                location: None,
             },
         ];
-        assert_eq!(
-            roto_candidates(&ports),
-            ["/dev/cu.usbmodem1401", "/dev/cu.usbmodem1403"]
+        // debug console（IF3）には問い合わせない — 候補は 1 本だけ
+        assert_eq!(admin_port(&ports).unwrap(), "/dev/cu.usbmodem1401");
+    }
+
+    #[test]
+    fn no_roto_or_two_rotos_is_an_error_not_a_guess() {
+        assert!(admin_port(&[]).is_err());
+        let two = [
+            port("/dev/cu.usbmodem1401", PRODUCT, 1, 0x0140_0000),
+            port("/dev/cu.usbmodem1403", PRODUCT, 3, 0x0140_0000),
+            port("/dev/cu.usbmodem2201", PRODUCT, 1, 0x0220_0000),
+        ];
+        let error = admin_port(&two).unwrap_err();
+        assert!(error.contains("2 ROTO-CONTROL"), "{error}");
+        assert!(
+            error.contains("--port"),
+            "どう指定すればよいかを言う: {error}"
         );
+    }
+
+    #[test]
+    fn only_unconfigured_counts_as_empty_other_codes_are_errors() {
+        assert_eq!(
+            seat_outcome(midistage_profiles::roto_serial::RC_UNCONFIGURED),
+            Seat::Empty
+        );
+        assert_eq!(seat_outcome(0x01), Seat::Error(0x01));
+        assert_eq!(seat_outcome(0x00), Seat::Configured);
     }
 
     #[test]
@@ -427,7 +519,16 @@ mod tests {
             switches: vec![],
             empty_knobs: (0..32).collect(),
             empty_switches: (0..32).collect(),
+            errors: vec![],
         };
+        // 読み取りの失敗があれば、空き席とはみなさない（席選びに使うと危ない）
+        let mut failed = blank(0, Some("SETUP 01"));
+        failed.errors.push("knob 3: rc=01".into());
+        assert!(!failed.is_free());
+        assert!(
+            !blank(0x01, None).is_free(),
+            "FD 以外の失敗は空き席ではない"
+        );
         assert!(blank(midistage_profiles::roto_serial::RC_UNCONFIGURED, None).is_free());
         assert!(blank(0, Some("")).is_free());
         assert!(!blank(0, Some("VP")).is_free(), "名前を付けた枠は使用中");
@@ -454,5 +555,23 @@ mod macos_tests {
             println!("{p:?}");
         }
         assert!(ports.iter().all(|p| p.path.starts_with("/dev/cu.")));
+    }
+}
+
+/// 実機があるときだけ（`cargo test -p midistaged --lib roto_admin -- --ignored`）。
+/// 開いている間、Roto の MIDI は止まる（1 秒未満）
+#[cfg(all(test, target_os = "macos"))]
+mod device_tests {
+    #[test]
+    #[ignore = "ROTO-CONTROL の実機が要る"]
+    fn a_second_open_is_refused_while_the_port_is_held() {
+        let (firmware, second) = super::with_port(None, |s| {
+            let second = super::with_port(Some(&s.path), |_| Ok(()));
+            Ok((s.firmware.clone(), second))
+        })
+        .unwrap();
+        println!("firmware {firmware:?}");
+        let error = second.expect_err("2 本目は断られる").to_string();
+        assert!(error.contains("in use"), "{error}");
     }
 }

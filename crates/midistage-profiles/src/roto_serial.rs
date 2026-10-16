@@ -560,6 +560,94 @@ mod tests {
     }
 
     #[test]
+    fn switch_with_steps_names_each_step() {
+        let mut d = common_bytes();
+        d.extend([14, 70, 0, 3]); // PUSH、3 段
+        for name in ["LOW", "MID", "HIGH"] {
+            d.extend(padded(name));
+        }
+        for _ in 3..STEP_NAMES {
+            d.extend(padded(""));
+        }
+        let s = Switch::parse(&d).unwrap();
+        assert_eq!(s.action, SwitchAction::Push);
+        assert_eq!(s.step_names, ["LOW", "MID", "HIGH"]);
+    }
+
+    #[test]
+    fn unknown_haptic_mode_is_kept_as_unknown() {
+        assert_eq!(
+            Knob::parse(&knob_bytes(7, 0xFF, 0xFF, 0, &[]))
+                .unwrap()
+                .haptics,
+            KnobHaptics::Unknown { mode: 7 }
+        );
+    }
+
+    #[test]
+    fn an_error_code_consumes_only_two_bytes() {
+        // FD 以外の失敗（01）でもデータは続かない。次の応答を食わない
+        let mut p = Parser::default();
+        p.expect(reply_len::KNOB);
+        let events = p.feed(&[RESPONSE, 0x01, 0x5A, 0x02, 0x03, 0x00, 0x01, 0x04]);
+        assert_eq!(
+            events,
+            vec![
+                Event::Reply {
+                    code: 0x01,
+                    data: vec![]
+                },
+                Event::Notification {
+                    kind: 0x02,
+                    sub: 0x03,
+                    data: vec![4]
+                },
+            ]
+        );
+    }
+
+    #[test]
+    fn a_reply_shorter_than_expected_waits_instead_of_guessing() {
+        let mut p = Parser::default();
+        p.expect(reply_len::FW_VERSION);
+        assert!(
+            p.feed(&[RESPONSE, RC_OK, 3, 2, 0]).is_empty(),
+            "10 バイト揃うまで待つ"
+        );
+        assert_eq!(
+            p.feed(b"dcf8018"),
+            vec![Event::Reply {
+                code: RC_OK,
+                data: vec![3, 2, 0, b'd', b'c', b'f', b'8', b'0', b'1', b'8']
+            }]
+        );
+    }
+
+    #[test]
+    fn a_notification_split_across_reads_is_reassembled() {
+        let mut p = Parser::default();
+        assert!(p.feed(&[0x5A, 0x02]).is_empty());
+        assert!(p.feed(&[0x03, 0x00]).is_empty());
+        assert!(p.feed(&[0x01]).is_empty());
+        assert_eq!(
+            p.feed(&[0x09]),
+            vec![Event::Notification {
+                kind: 0x02,
+                sub: 0x03,
+                data: vec![9]
+            }]
+        );
+    }
+
+    #[test]
+    fn a_name_with_invalid_utf8_is_still_read() {
+        let mut d = vec![0];
+        d.extend([b'A', 0xFF, b'B']);
+        d.resize(1 + NAME_LEN, 0);
+        assert_eq!(Setup::parse(&d).unwrap().name, "A\u{FFFD}B");
+    }
+
+    #[test]
     fn notifications_from_the_device_are_separated_from_replies() {
         let mut p = Parser::default();
         p.expect(0);
