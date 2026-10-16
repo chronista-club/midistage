@@ -36,6 +36,16 @@ enum Command {
     },
     /// CoreMIDI の物理ポートを列挙する。接続や MIDI 送信は行わない。
     ListPorts,
+    /// ROTO-CONTROL の設定を Serial（admin port）で全部読む。読み取りだけ。
+    /// 読んでいる間は Roto の MIDI が止まる（数十秒）。結果は JSON で保存する
+    RotoDump {
+        /// 保存先（既定 ./roto-dump.json）
+        #[arg(long, default_value = "roto-dump.json")]
+        out: PathBuf,
+        /// admin port を明示する（既定は VID/PID で探す）
+        #[arg(long)]
+        port: Option<String>,
+    },
 }
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -50,21 +60,22 @@ async fn main() -> anyhow::Result<()> {
                 &dir,
                 "midistaged.log",
             ));
+            // MIDI トレースは別ファイル（trace.log）。通常のログと stderr には混ぜない
+            let (trace_file, trace_guard) =
+                tracing_appender::non_blocking(tracing_appender::rolling::daily(&dir, "trace.log"));
             use tracing_subscriber::layer::SubscriberExt;
             use tracing_subscriber::util::SubscriberInitExt;
+            let directives = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".into());
             tracing_subscriber::registry()
-                .with(
-                    tracing_subscriber::EnvFilter::try_from_default_env()
-                        .unwrap_or_else(|_| "info".into()),
-                )
-                .with(tracing_subscriber::fmt::layer().with_writer(std::io::stderr))
-                .with(
-                    tracing_subscriber::fmt::layer()
-                        .with_ansi(false)
-                        .with_writer(file),
-                )
+                .with(midistaged::logging::layers(
+                    &directives,
+                    std::io::stderr,
+                    file,
+                    trace_file,
+                    tracing_subscriber::fmt::time::SystemTime,
+                ))
                 .init();
-            Some(guard)
+            Some((guard, trace_guard))
         }
         _ => {
             tracing_subscriber::fmt()
@@ -74,6 +85,49 @@ async fn main() -> anyhow::Result<()> {
         }
     };
     match args.command {
+        Command::RotoDump { out, port } => {
+            #[cfg(target_os = "macos")]
+            {
+                // 同期 I/O（最大 2 分弱）。async の runtime を塞がない
+                let dump = tokio::task::spawn_blocking(move || {
+                    midistaged::roto_admin::read_all(port.as_deref())
+                })
+                .await??;
+                std::fs::write(&out, serde_json::to_vec_pretty(&dump)?)?;
+                let free: Vec<_> = dump
+                    .setups
+                    .iter()
+                    .filter(|s| s.is_free())
+                    .map(|s| s.index)
+                    .collect();
+                println!(
+                    "port {} / FW {}.{}.{} ({}) / mode {:?} / current {:?}",
+                    dump.port,
+                    dump.firmware.major,
+                    dump.firmware.minor,
+                    dump.firmware.patch,
+                    dump.firmware.commit,
+                    dump.mode,
+                    dump.current_setup
+                );
+                for s in dump.setups.iter().filter(|s| !s.is_free()) {
+                    println!(
+                        "  setup {:02}: {:<13} knobs {:2} switches {:2}",
+                        s.index,
+                        s.name.as_deref().unwrap_or("?"),
+                        s.knobs.len(),
+                        s.switches.len()
+                    );
+                }
+                println!("free setups ({}): {:?}", free.len(), free);
+                println!(
+                    "port open {} ms for {} requests (MIDI was paused while open) -> {}",
+                    dump.port_open_ms,
+                    dump.requests,
+                    out.display()
+                );
+            }
+        }
         Command::ListPorts =>
         {
             #[cfg(target_os = "macos")]
@@ -105,6 +159,9 @@ async fn main() -> anyhow::Result<()> {
                     return Ok(());
                 }
             };
+            // CoreMIDI に触る前に。後から挿された機材を拾うための run loop（native.rs）
+            #[cfg(target_os = "macos")]
+            midistaged::native::start_notify_thread();
             let mut broker = Broker::new(uuid::Uuid::new_v4().to_string());
             for (id, name) in PROFILES {
                 broker.add_device(id, id, false);
@@ -120,12 +177,47 @@ async fn main() -> anyhow::Result<()> {
             let running = Arc::new(AtomicBool::new(true));
             let worker_running = running.clone();
             let shared = service.runtime.clone();
+            let trace_dir = directory.clone();
+            midistaged::trace::refresh(&trace_dir);
+            // design 06: 設定ポート（Roto の Serial）の用事を 1 つずつ。MIDI の poll を止めないよう別 thread
+            #[cfg(target_os = "macos")]
+            {
+                let setups = service.runtime.clone();
+                let setups_running = running.clone();
+                std::thread::Builder::new()
+                    .name("device-setups".into())
+                    .spawn(move || {
+                        while setups_running.load(Ordering::Acquire) {
+                            let job = {
+                                let mut r = setups.lock().expect("runtime mutex poisoned");
+                                r.plan_setup_switches();
+                                r.next_setup_job()
+                            };
+                            if let Some(job) = job {
+                                let result = midistaged::roto_admin::select_setup(job.setup)
+                                    .map_err(|e| e.to_string());
+                                setups
+                                    .lock()
+                                    .expect("runtime mutex poisoned")
+                                    .finish_setup_job(&job, result);
+                            } else {
+                                std::thread::sleep(std::time::Duration::from_millis(50));
+                            }
+                        }
+                    })?;
+            }
             let worker = std::thread::spawn(move || {
                 #[cfg(target_os = "macos")]
                 {
                     let mut native = midistaged::native::NativeRuntime::new(shared);
+                    let mut ticks: u32 = 0;
                     while worker_running.load(Ordering::Acquire) {
                         native.poll();
+                        // MIDI トレースのフラグは 1 秒ごと（20 × 50 ms）に見る。再起動なしで切り替わる
+                        ticks = ticks.wrapping_add(1);
+                        if ticks.is_multiple_of(20) {
+                            midistaged::trace::refresh(&trace_dir);
+                        }
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
                 }

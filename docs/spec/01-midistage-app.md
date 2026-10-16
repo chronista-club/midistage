@@ -44,6 +44,7 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 ### ステータス一覧
 
 - REQ-APP-001: 機材ごとに `present` / 担当（assignment）/ 今握っている app（lease の client）/ phase を表示する。情報源は midistaged の snapshot のみ。CoreMIDI を直接見ない
+- REQ-APP-001b: 「挿さっている / 見当たらない」は列にせず、機材名の濃淡（見当たらない = 薄い）で表す。見当たらない機材は一覧の下へ（mako 2026-10-12「タイトルですでに表現できてるね」）
 - REQ-APP-001a: 機材の名前は **メーカー + 機材名**（「KORG Keystage 61」「AKAI LPD8 mk2」）。正本は gear.json の `maker` / `model`（design 04）。メーカーは控えめな色で添え、機材名が主役。資産の無い機材は snapshot の名前のまま。同じ名前が並ぶときは ID を添えて区別する（mako 2026-10-12「ユーザが見たいのは、どこの何か」「メーカーは、控えめの色と表示」）
 - REQ-APP-002: サービスに接続できない（`endpoint.json` が無い、版が違う、epoch が変わった）ときは、機材一覧の前にその事実を出す。黙って空にしない
 - REQ-APP-003: `releasing` が一定時間（design 03 のタイムアウトとは別に、表示上の閾値）続いた機材と、`error` の機材を目立たせる
@@ -77,6 +78,17 @@ design 04 は「机・棚・カメラはアプリに残る」とした。本 spe
 - REQ-APP-045: midistaged のログは `~/Library/Logs/midistaged/` に置き、メニューから開ける
 - REQ-APP-047: アプリ自体もログイン時に起こせる（`SMAppService.mainApp`）。サービスの常駐とは別の登録で、人がメニューで切り替える。サービスが常駐しているのにアプリが起動しない設定なら、注意ではなく案内として一言出す（mako 2026-10-12「両方やろう」）
 - REQ-APP-046: 開発用の midistaged（`cargo run -p midistaged -- serve`）と同梱版が同時に起動したら、`runtime.lock` で後から来た方が退く。アプリはどちらが動いているか（同梱版か、別のバイナリか）を表示する
+
+### MIDI トレース（開発用、mako 2026-10-13「通常は切って負荷かけないようにしつつ、開発でちゃんとどこまで接続がきてるかを確認できるように」）
+
+- REQ-APP-050: midistaged は MIDI の流れを 1 本の時系列で記録できる。記録点は 機材→app（転送 / lease が無く破棄）、app→サービス（受理 / 溢れ）、サービス→機材（送信 / 古い lease で破棄 / 失敗）、仮想ポートの開閉。各行に 機材 / app / 向き / 種類 / バイト列（長い SysEx は頭と尾と長さ）
+- REQ-APP-051: 既定はオフ。オフのときの負荷は 1 パケットあたり atomic の読み 1 回。再起動なしで切り替わる（`<state_dir>/trace` の有無を毎秒見る。`MIDISTAGED_TRACE=1` で強制オン）
+- REQ-APP-053: 流れの要所は **info ログ**（`midistaged.log`、常時オン）に出す。セッションの接続 / 切断（app 名）、機材ごとの 挿抜 / 担当の変化（revision）/ lease の付与・手放し・移動 / phase の変化（releasing の行き先）、仮想ポートの開閉。要求の拒否と MIDI I/O の障害は warn。Snapshot の取得のように状態を変えない要求は出さない（mako 2026-10-13「info は、開発中も常時見たいエラーレベル」）。毎メッセージ起こりうる warn は繰り返さない: MIDI I/O の障害は機材ごとに最初の 1 回、SendMidi の拒否は同じ app・機材・理由で直るか切断されるまで 1 回。app から来た文字列は制御文字を escape して出す（client_id は制御文字を含めば Hello で断る）。`RUST_LOG` は通常のログだけを絞り、trace.log には効かない
+- REQ-APP-054: トレースはクロック（F8）と Active Sensing（FE）だけのパケットを既定で省く。フラグファイルに `realtime` と書けば含める
+- REQ-APP-052: 記録は通常のログと分ける（`~/Library/Logs/midistaged/trace.log.<日付>`）。メニューから開始・停止・開くができ、オンの間はメニューに注意として出す（止め忘れ防止）
+
+- REQ-APP-055: メニューバー app から「ログ」window を開ける。タブは「流れ」（midistaged.log の info / warn、通信ライブラリの行は既定で隠す）と「MIDI トレース」（trace.log を表で: 時刻 / 向き / 機材 / app / 判定 / 種類 / バイト列）。追従・絞り込み・消去、トレースの開始・停止も window から。ファイルを末尾から追いかける（wire は使わない）（mako 2026-10-14「そのログを window に出せる？」）
+- REQ-APP-056: app は終了時に midistaged への接続を閉じる。閉じずに落ちると、サービスは QUIC のタイムアウト（約 30 秒）までセッションを生きているとみなし、その間の同じ app の再接続を断る（実測 2026-10-14、ログ window で発見）
 
 ### 共通
 

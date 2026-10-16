@@ -39,8 +39,11 @@ public struct ServiceState: Sendable, Equatable {
     public var bundled: Bundled
     /// 4. アプリ自体をログイン時に起こすか（SMAppService.mainApp）。サービスとは別の登録
     public var appAtLogin: Bool
-    public init(registration: Registration, running: Running, bundled: Bundled, appAtLogin: Bool = false) {
+    /// 5. MIDI トレース（開発用）がオンか（フラグファイルの有無）
+    public var tracing: Bool
+    public init(registration: Registration, running: Running, bundled: Bundled, appAtLogin: Bool = false, tracing: Bool = false) {
         self.registration = registration; self.running = running; self.bundled = bundled; self.appAtLogin = appAtLogin
+        self.tracing = tracing
     }
 }
 
@@ -108,6 +111,11 @@ public func summarize(_ s: ServiceState) -> MenuSummary {
     case .notFound:
         icon = .attention
         lines.append("同梱の LaunchAgent が見つかりません（アプリの不具合）")
+    }
+    if s.tracing {
+        // 開発用。付けっぱなしに気づけるように注意で出す
+        if icon == .normal { icon = .attention }
+        lines.append("MIDI トレース中（開発用。止め忘れに注意）")
     }
     if s.registration == .enabled && !s.appAtLogin {
         // サービスは起きるがアイコンは出ない状態。注意ではなく案内

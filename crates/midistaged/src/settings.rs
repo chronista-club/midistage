@@ -12,6 +12,18 @@ pub struct SavedSettings {
     pub devices: BTreeMap<String, SavedDevice>,
     #[serde(default)]
     pub initialized_clients: BTreeSet<String>,
+    /// 機材の setup の持ち主（design 06）。device_id → client_id → 登録した setup
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub device_setups: BTreeMap<String, BTreeMap<String, ClientSetups>>,
+}
+
+/// あるアプリが機材に持つ setup（Roto 本体の保存枠の番号）
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct ClientSetups {
+    pub setups: Vec<u8>,
+    /// 最後に選んだ setup。持ち主に戻ったらここへ戻す
+    #[serde(default)]
+    pub last: Option<u8>,
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -142,6 +154,7 @@ mod tests {
                 },
             )]),
             initialized_clients: BTreeSet::new(),
+            device_setups: BTreeMap::new(),
         };
         store.save(&settings).unwrap();
         assert_eq!(SettingsStore::new(dir.path()).load().unwrap(), settings);

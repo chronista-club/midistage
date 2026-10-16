@@ -64,3 +64,10 @@ let bundled = Bundled(version: "0.1.0", executable: "/Applications/midistage.app
     #expect(!s.versionMismatch && !s.foreignBinary)
     #expect(s.icon == .normal)
 }
+
+@Test func tracingIsVisibleSoItIsNotLeftOn() {
+    let running = Running.connected(version: "0.1.0", executable: bundled.executable, devices: DeviceSummary(present: 7))
+    let s = summarize(ServiceState(registration: .enabled, running: running, bundled: bundled, appAtLogin: true, tracing: true))
+    #expect(s.icon == .attention)
+    #expect(s.lines.contains { $0.contains("MIDI トレース中") })
+}

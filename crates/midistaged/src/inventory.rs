@@ -25,6 +25,24 @@ pub const PROFILES: &[(&str, &str)] = &[
     ("l6max", "L6max"),
     ("zenith2", "Zenith 2"),
 ];
+/// ポート名から profile を引く（大文字小文字を区別しない部分一致。純粋）
+pub fn profile_for_name(name: &str) -> Option<&'static str> {
+    let name = name.to_lowercase();
+    PROFILES
+        .iter()
+        .find(|(id, pattern)| {
+            name.contains(&pattern.to_lowercase()) || (*id == "numa" && name.contains("ncxse"))
+        })
+        .map(|(id, _)| *id)
+}
+
+/// 保存済みの `generic:<ポート名>` が、今は profile で認識される名前か。
+/// profile ができる前に汎用として覚えた記録は、今は profile の ID で出るので重複になる（純粋）
+pub fn superseded_generic(id: &str) -> bool {
+    id.strip_prefix("generic:")
+        .is_some_and(|name| profile_for_name(name).is_some())
+}
+
 pub fn inventory(ports: &[Port]) -> BTreeMap<String, DevicePorts> {
     let mut found: BTreeMap<String, DevicePorts> = PROFILES
         .iter()
@@ -35,12 +53,9 @@ pub fn inventory(ports: &[Port]) -> BTreeMap<String, DevicePorts> {
         if port.physical_device == 0 || port.name.starts_with("Midistage/") {
             continue;
         }
-        let name = port.name.to_lowercase();
-        if let Some((id, _)) = PROFILES.iter().find(|(id, pattern)| {
-            name.contains(&pattern.to_lowercase()) || (*id == "numa" && name.contains("ncxse"))
-        }) {
+        if let Some(id) = profile_for_name(&port.name) {
             found
-                .get_mut(*id)
+                .get_mut(id)
                 .expect("known profile")
                 .ports
                 .push(port.clone());
@@ -154,6 +169,31 @@ mod tests {
         assert_eq!(found["numa"].ports.len(), 2);
         assert_eq!(found["xtouch"].ports[0].name, "X-Touch INT");
     }
+    #[test]
+    fn a_port_name_tells_which_profile_it_belongs_to() {
+        assert_eq!(profile_for_name("Zenith 2"), Some("zenith2"));
+        assert_eq!(
+            profile_for_name("zenith 2"),
+            Some("zenith2"),
+            "generic: の ID は小文字"
+        );
+        assert_eq!(
+            profile_for_name("nanoKONTROL2 SLIDER/KNOB"),
+            Some("nanokontrol")
+        );
+        assert_eq!(profile_for_name("NCXSE"), Some("numa"));
+        assert_eq!(profile_for_name("Studio Keyboard MIDI"), None);
+    }
+    #[test]
+    fn a_generic_id_is_superseded_once_a_profile_claims_its_name() {
+        assert!(superseded_generic("generic:zenith 2"));
+        assert!(!superseded_generic("generic:studio keyboard midi"));
+        assert!(
+            !superseded_generic("zenith2"),
+            "profile の ID そのものは対象外"
+        );
+    }
+
     #[test]
     fn unknown_physical_keyboard_remains_available_across_hub_ids() {
         let before = inventory(&[port(1, 11, "Studio Keyboard MIDI", true)]);

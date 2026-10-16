@@ -195,11 +195,16 @@ pub fn snapshot(runtime: &Runtime, session: &str) -> Snapshot {
                     state.phase = midistage_protocol::Phase::Error;
                     ports = NativePorts::default();
                 }
+                let id = state.device_id.clone();
                 DeviceView {
                     state,
                     controls: vec![],
                     native_ports: ports,
                     error,
+                    configuring: runtime.configuring.contains(&id),
+                    current_setup: runtime.current_setup.get(&id).copied(),
+                    setup_owners: runtime.setup_owners(&id),
+                    config_error: runtime.config_errors.get(&id).cloned(),
                 }
             })
             .collect(),
@@ -211,6 +216,11 @@ async fn send_midi(
     session: &str,
     payload: serde_json::Value,
 ) -> Reply {
+    let device = payload
+        .get("device_id")
+        .and_then(|v| v.as_str())
+        .map(crate::logging::printable)
+        .unwrap_or_else(|| "?".into());
     let prepared = (|| -> anyhow::Result<_> {
         let runtime = shared.lock().expect("runtime mutex poisoned");
         let request: SendMidi = serde_json::from_value(payload)?;
@@ -251,26 +261,49 @@ async fn send_midi(
     })();
     let completion = match prepared {
         Ok(completion) => completion,
-        Err(reason) => return failure(&reason),
+        Err(reason) => {
+            warn_send_rejection(shared, session, &device, &reason.to_string());
+            return failure(&reason);
+        }
     };
     // Driver completion must not hold the broker lock; the driver rechecks its lease.
     match completion.await {
-        Ok(Ok(())) => Reply {
-            snapshot: Some(snapshot(
-                &shared.lock().expect("runtime mutex poisoned"),
-                session,
-            )),
-            error: None,
-        },
-        Ok(Err(message)) => error(
-            if message == "stale_lease" {
-                "stale_lease"
-            } else {
-                "driver_error"
-            },
-            &message,
-        ),
-        Err(_) => error("driver_error", "output worker stopped before completion"),
+        Ok(Ok(())) => {
+            let mut runtime = shared.lock().expect("runtime mutex poisoned");
+            runtime.send_succeeded(session, &device);
+            Reply {
+                snapshot: Some(snapshot(&runtime, session)),
+                error: None,
+            }
+        }
+        Ok(Err(message)) => {
+            warn_send_rejection(shared, session, &device, &message);
+            error(
+                if message == "stale_lease" {
+                    "stale_lease"
+                } else {
+                    "driver_error"
+                },
+                &message,
+            )
+        }
+        Err(_) => {
+            let message = "output worker stopped before completion";
+            warn_send_rejection(shared, session, &device, message);
+            error("driver_error", message)
+        }
+    }
+}
+
+/// SendMidi の拒否を warn に。毎メッセージ来うるので、同じ拒否は直るまで 1 回だけ
+fn warn_send_rejection(shared: &Arc<Mutex<Runtime>>, session: &str, device: &str, reason: &str) {
+    let mut runtime = shared.lock().expect("runtime mutex poisoned");
+    if runtime.first_send_rejection(session, device, reason) {
+        let who = runtime.client_name(session);
+        let reason = crate::logging::printable(reason);
+        tracing::warn!(
+            "SendMidi to {device} from {who} rejected: {reason} (repeats are not logged)"
+        );
     }
 }
 
@@ -283,8 +316,20 @@ fn dispatch(
 ) -> Reply {
     let authenticated = runtime.broker.client_for_session(session).is_some();
     if !authenticated && method != "Hello" {
+        tracing::warn!(
+            "request {} from an unknown session rejected: Hello is required",
+            crate::logging::printable(method)
+        );
         return error("unauthenticated", "Hello is required");
     }
+    let hello_client = (method == "Hello")
+        .then(|| {
+            payload
+                .get("client_id")
+                .and_then(|v| v.as_str())
+                .map(crate::logging::printable)
+        })
+        .flatten();
     let result = (|| -> anyhow::Result<()> {
         match method {
             "Hello" => {
@@ -301,6 +346,10 @@ fn dispatch(
                     .quiesced(&request.device_id, session, &request.lease_token)?;
                 // I/O adapter の in-flight 完了を別途確認するまで drained は呼ばない。
             }
+            "SetDeviceSetups" => {
+                runtime.set_device_setups(session, &serde_json::from_value(payload)?)?
+            }
+            "SelectSetup" => runtime.select_setup(session, &serde_json::from_value(payload)?)?,
             "Present" => {
                 let request: Present = serde_json::from_value(payload)?;
                 runtime.broker.authorize_output(
@@ -314,6 +363,22 @@ fn dispatch(
         }
         Ok(())
     })();
+    if method != "Snapshot" {
+        if let Err(reason) = &result {
+            // 拒否は開発中も常に見たい（stale_revision、未認証、版違い …）。
+            // Hello はまだ名前を覚えていないので、名乗った client_id を出す
+            let who = if method == "Hello" {
+                hello_client.clone().unwrap_or_else(|| "?".into())
+            } else {
+                runtime.client_name(session)
+            };
+            // 理由には要求の中身が混ざりうる（serde のエラーは値を引用する）
+            let method = crate::logging::printable(method);
+            let reason = crate::logging::printable(&reason.to_string());
+            tracing::warn!("request {method} from {who} rejected: {reason}");
+        }
+        runtime.log_flow();
+    }
     match result {
         Ok(()) => Reply {
             snapshot: Some(snapshot(runtime, session)),

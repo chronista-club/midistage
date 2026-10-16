@@ -23,5 +23,6 @@
 pub mod device_input;
 pub mod device_profile;
 pub mod roto_palette;
+pub mod roto_serial;
 
 pub mod keystage;

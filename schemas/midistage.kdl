@@ -1,6 +1,8 @@
 // 同一ユーザー / 同一 Mac の MIDI 機材利用契約。正典: docs/design/03-runtime-service.md
 // snapshot（type="json"）の形は crates/midistage-protocol/src/wire.rs の Snapshot が正。
 // 2026-10-11: `service { version, executable }` を追加（省略可。design 05「常駐と配布」）。
+// 2026-10-16: SetDeviceSetups / SelectSetup と、device の `configuring` / `current_setup` /
+//   `setup_owners` / `config_error`（省略可）を追加（design 06「ROTO の setup を持ち主に合わせて切り替える」）。
 protocol "midistage" version="1.0.0" {
     namespace "club.chronista.midistage"
     channel "midistage" from="client" lifetime="persistent" {
@@ -33,6 +35,17 @@ protocol "midistage" version="1.0.0" {
             field "lease_token" type="string" required=#true
             field "port_name" type="string" required=#true
             field "bytes" type="array<int>" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "SetDeviceSetups" {
+            field "device_id" type="string" required=#true
+            field "setups" type="array<int>" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "SelectSetup" {
+            field "device_id" type="string" required=#true
+            field "lease_token" type="string" required=#true
+            field "setup" type="int" required=#true
             returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
         }
         request "Present" {

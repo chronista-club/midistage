@@ -1,0 +1,10 @@
+2026-10-14T01:02:03.456789Z  INFO ---- MIDI trace on ----
+2026-10-14T01:02:03.456789Z  INFO FWD | B7 4F 1F dir="dev→app" device=lpd8 app=vp port=LPD8 mk2 kind="cc"
+2026-10-14T01:02:03.456789Z  INFO DROP no lease | F8 dir="dev→app" device=keystage app=ladyland port=Keystage KBD/CTRL kind="clock"
+2026-10-14T01:02:03.456789Z  INFO QUEUE | 90 3C 64 dir="app→svc" device=keystage app=ladyland port=Keystage KBD/CTRL kind="note-on"
+2026-10-14T01:02:03.456789Z  INFO SENT | F0 42 30 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 … 11 11 11 F7 (44 bytes) dir="svc→dev" device=keystage app=ladyland via="SendMidi" kind="sysex"
+2026-10-14T01:02:03.456789Z  INFO DROP stale lease | B0 01 02 dir="svc→dev" device=keystage app=ladyland via="port" kind="cc"
+2026-10-14T01:02:03.456789Z  INFO OVERFLOW queue full; lease stopped dir="app→svc" device=keystage app=ladyland
+2026-10-14T01:02:03.456789Z  INFO OPEN bridge | in ["Midistage/vp/boot:1/11 | LPD8 mk2"] | out ["Midistage/vp/boot:1/12 | LPD8 mk2"] device=lpd8 app=vp token=boot:1
+2026-10-14T01:02:03.456789Z  INFO CLOSE bridge device=lpd8 token=boot:1
+2026-10-14T01:02:03.456789Z  INFO ---- MIDI trace off ----
