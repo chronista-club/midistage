@@ -156,7 +156,7 @@ midistage.app/Contents/
 - **appcast**: `scripts/build-app.sh --publish` が、公証済みの DMG から Sparkle の `generate_appcast` で `appcast.xml` を作り（EdDSA 署名入り）、DMG と一緒に Release へ添付する。アプリの `SUFeedURL` は `https://github.com/chronista-club/midistage/releases/latest/download/appcast.xml`（GitHub が最新リリースの添付へ転送する。Pages は使わない）
 - **版**: Sparkle は `CFBundleVersion` で新旧を比べる。今の `<コミット数>.<ハッシュ>` はハッシュの部分で順序が壊れるので、`CFBundleVersion` = コミット数（単調に増える）にし、ハッシュは `MidistageCommit` に移す。表示用の版（`CFBundleShortVersionString`）は今どおり tag
 - **同梱**: `Sparkle.framework` を `Contents/Frameworks` に入れ、`MidistageApp` に `@executable_path/../Frameworks` の rpath を足す。署名は内側から（Installer.xpc / Downloader.xpc / Autoupdate / Updater.app → framework → midistaged → MidistageApp → .app）
-- **鍵**: `generate_keys` が login keychain に秘密鍵を置き、公開鍵を出す。公開鍵は `build-app.sh` に書く（公開して困らない）。秘密鍵の控えは別に取る
+- **鍵**: `generate_keys` が login keychain（account `midistage`）に秘密鍵を置き、公開鍵を出す。公開鍵は `build-app.sh` に書く（公開して困らない）。秘密鍵の控えは 1Password の Engineering 保管庫「midistage — Sparkle EdDSA signing key」（2026-10-16 作成。戻し方も同じ項目に）。別の Mac でリリースするときはそこから `generate_keys --account midistage -f <file>` で入れる
 - **開発ビルド**（`swift run`、Info.plist に `SUFeedURL` が無い）では updater を起動しない
 - **サービスの入れ替え**: 判断は MenuModel の純粋関数 `serviceUpdate(state, tried:)`。入力は 稼働中の版・実行ファイル、同梱の版・実行ファイル、lease を持つアプリ、前に試した版。出力は「何もしない / 今すぐ再起動 / 空くのを待つ（誰が使っているか）」。アプリの 3 秒ごとの refresh で評価し、「今すぐ」なら `Residency.restart`（解除 → 登録）を 1 回だけ呼ぶ
 - 制約: 版の比較は tag 単位。nightly の手元ビルドは版が同じなので、この自動入れ替えの対象にならない（今どおりメニューから再起動する）
