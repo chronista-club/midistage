@@ -14,12 +14,15 @@ let package = Package(
         // ルートの Package.swift（MidistageClient）。identity を明示する — path 依存の identity は
         // 既定でディレクトリ名になり、worktree の名前（midistage / midistage-app …）で変わってしまう
         .package(name: "MidistageClient", path: "../.."),
+        // 自動アップデート（spec REQ-APP-060〜062、design 05「自動アップデート」）
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.10.0"),
     ],
     targets: [
         .target(name: "MenuModel", path: "Sources/MenuModel"),
         .executableTarget(
             name: "MidistageApp",
-            dependencies: ["MenuModel", .product(name: "MidistageClient", package: "MidistageClient")],
+            dependencies: ["MenuModel", .product(name: "MidistageClient", package: "MidistageClient"),
+                           .product(name: "Sparkle", package: "Sparkle")],
             path: "Sources/MidistageApp"),
         .testTarget(name: "MenuModelTests", dependencies: ["MenuModel"], path: "Tests/MenuModelTests",
                     // サービスのログの形（Rust の contract テストが書く）。#filePath から読む
