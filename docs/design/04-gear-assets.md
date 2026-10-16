@@ -71,6 +71,8 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 ```
 gear/
   gearlib.py      意味の層の純粋関数（ID を揃える / control の対応 / 鍵盤展開 / manifest）
+  generate.py     Blender headless: gear.json → 新しい .blend（初回生成。既存の .blend には上書きしない）
+  nanokontrol_build.py  nanoKONTROL2 専用の組み立て（generate.py が呼ぶ）
   build.py        Blender headless: .blend → usdz + glb + json、manifest
   check.py        契約の検査（部品名 ⊆ .blend、原点・縮尺・回転、外形 ±2 mm。高さは警告）
   fix_names.py    移設時の 1 回きり: Blender の `.001` 接尾辞を外して部品名に戻す
@@ -109,3 +111,4 @@ Ladyland の机・棚の Blender シーン（studio.blend）は機材を**リン
   （生成器の移設はまだ。`check.py` は 2 台 OK、Zenith 2 の高さ 57.8 ≠ 60 は警告）。inventory に `l6max` / `zenith2` を追加。
   `build.py` の目録は `--only` でも全機材を載せるように直した（`--only` で他の 8 台の項が消えていた）
 - 2026-10-12 gear.json に `maker` / `model` を必須に（`model` にメーカー名を重ねない。`gear/tests` で検査）。app の一覧が「メーカー + 機材名」を出す正本（spec 01 REQ-APP-001a）
+- 2026-10-14 生成器を移設（Ladyland の gear_build.py / nanokontrol.py → generate.py / nanokontrol_build.py）。移設時の 8 台は生成し直すと部品名・外形とも差ゼロ。l6max / zenith2 は端子の穴など手で足した部品があり、生成器はその土台を作る
