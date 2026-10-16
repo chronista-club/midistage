@@ -1163,7 +1163,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-cli"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1175,7 +1175,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-client"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "club-unison",
@@ -1188,7 +1188,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-core"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "thiserror 2.0.21",
@@ -1197,7 +1197,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-keystage"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "knus",
@@ -1208,7 +1208,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-profiles"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "serde",
  "sha1",
@@ -1216,7 +1216,7 @@ dependencies = [
 
 [[package]]
 name = "midistage-protocol"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -1225,7 +1225,7 @@ dependencies = [
 
 [[package]]
 name = "midistaged"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
