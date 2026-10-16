@@ -9,7 +9,7 @@
 #   scripts/build-app.sh --install    # /Applications へ配置（動いていれば終了してから）
 #   scripts/build-app.sh --run        # 作って起動
 #   scripts/build-app.sh --dist       # 公証 + staple + DMG（Developer ID が要る）
-#   scripts/build-app.sh --publish    # --dist + その tag の GitHub Release へ DMG を添付（tag の上でだけ）
+#   scripts/build-app.sh --publish    # --dist + その tag の GitHub Release へ DMG と appcast.xml（Sparkle、EdDSA 署名）を添付（tag の上でだけ）
 #
 # 署名: Developer ID があれば Hardened Runtime で署名（公証に出せる）、無ければ ad-hoc。
 # 同梱 midistaged（ネストした実行ファイル）は先に個別署名する — 公証はこれが無いと弾く。
@@ -34,6 +34,11 @@ notary_profile() {
 }
 NOTARY_PROFILE=""
 BUNDLE_ID="club.chronista.midistage"
+# 自動アップデート（design 05「自動アップデート」）。appcast は最新リリースの添付。GitHub が最新へ転送する
+FEED_URL="https://github.com/chronista-club/midistage/releases/latest/download/appcast.xml"
+# Sparkle の EdDSA 公開鍵。秘密鍵はリリースする Mac の login keychain（account "midistage"）
+SPARKLE_PUBLIC_KEY="+xIHRbYav1g0y9ICB55h3Oa/Q63Dk3yE+2qBgAi4bNQ="
+SPARKLE_ACCOUNT="midistage"
 AGENT_PLIST="club.chronista.midistaged.plist"
 INSTALL=0; RUN=0; MAKE_DIST=0; PUBLISH=0
 for arg in "$@"; do
@@ -53,7 +58,9 @@ if [ "$PUBLISH" = "1" ]; then
 fi
 cd "$REPO_ROOT"
 SHORT_VERSION="$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || echo "0.0.1")"
-BUILD_VERSION="$(git rev-list --count HEAD).$(git rev-parse --short HEAD)"
+# Sparkle は CFBundleVersion で新旧を比べるので、単調に増えるコミット数だけにする。ハッシュは MidistageCommit に
+BUILD_VERSION="$(git rev-list --count HEAD)"
+COMMIT="$(git rev-parse --short HEAD)"
 
 echo "==> midistaged を release ビルド"
 cargo build --release -p midistaged
@@ -62,13 +69,20 @@ test -x "$MIDISTAGED"
 
 echo "==> MidistageApp を release ビルド"
 ( cd "$APP_PKG" && swift build -c release --product MidistageApp )
-BINARY="$(cd "$APP_PKG" && swift build -c release --product MidistageApp --show-bin-path)/MidistageApp"
+BIN_DIR="$(cd "$APP_PKG" && swift build -c release --product MidistageApp --show-bin-path)"
+BINARY="$BIN_DIR/MidistageApp"
 test -x "$BINARY"
+SPARKLE_FRAMEWORK="$BIN_DIR/Sparkle.framework"
+test -d "$SPARKLE_FRAMEWORK"
+SPARKLE_BIN="$APP_PKG/.build/artifacts/sparkle/Sparkle/bin"
 
 echo "==> バンドルを組む"
 rm -rf "$APP"
-mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$CONTENTS/Library/LaunchAgents"
+mkdir -p "$CONTENTS/MacOS" "$CONTENTS/Resources" "$CONTENTS/Library/LaunchAgents" "$CONTENTS/Frameworks"
 cp "$BINARY" "$CONTENTS/MacOS/MidistageApp"
+# Sparkle は Contents/Frameworks に。symlink を保ったまま写し、実行ファイルから見つかるよう rpath を足す
+ditto "$SPARKLE_FRAMEWORK" "$CONTENTS/Frameworks/Sparkle.framework"
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$CONTENTS/MacOS/MidistageApp" 2>/dev/null || true
 cp "$MIDISTAGED" "$CONTENTS/MacOS/midistaged"
 cp "$APP_PKG/Resources/$AGENT_PLIST" "$CONTENTS/Library/LaunchAgents/$AGENT_PLIST"
 plutil -lint "$CONTENTS/Library/LaunchAgents/$AGENT_PLIST" >/dev/null
@@ -84,6 +98,12 @@ cat > "$CONTENTS/Info.plist" <<PLIST
     <key>CFBundlePackageType</key><string>APPL</string>
     <key>CFBundleShortVersionString</key><string>${SHORT_VERSION}</string>
     <key>CFBundleVersion</key><string>${BUILD_VERSION}</string>
+    <key>MidistageCommit</key><string>${COMMIT}</string>
+    <key>SUFeedURL</key><string>${FEED_URL}</string>
+    <key>SUPublicEDKey</key><string>${SPARKLE_PUBLIC_KEY}</string>
+    <key>SUEnableAutomaticChecks</key><true/>
+    <key>SUAllowsAutomaticUpdates</key><true/>
+    <key>SUAutomaticallyUpdate</key><true/>
     <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
     <key>LSMinimumSystemVersion</key><string>14.0</string>
     <key>LSApplicationCategoryType</key><string>public.app-category.music</string>
@@ -99,18 +119,26 @@ IDENTITY="${MIDISTAGE_SIGN_IDENTITY:-$(security find-identity -v -p codesigning 
     | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/')}"
 if [ -n "$IDENTITY" ]; then
     echo "==> Developer ID で署名 + Hardened Runtime: $IDENTITY"
+    # Sparkle は内側から（公式の手順。Downloader.xpc は entitlements を保つ）
+    SPK="$CONTENTS/Frameworks/Sparkle.framework/Versions/B"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$SPK/XPCServices/Installer.xpc"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" --preserve-metadata=entitlements "$SPK/XPCServices/Downloader.xpc"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$SPK/Autoupdate"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$SPK/Updater.app"
+    codesign --force --options runtime --timestamp --sign "$IDENTITY" "$CONTENTS/Frameworks/Sparkle.framework"
     codesign --force --options runtime --timestamp --sign "$IDENTITY" "$CONTENTS/MacOS/midistaged"
     codesign --force --options runtime --timestamp --sign "$IDENTITY" "$CONTENTS/MacOS/MidistageApp"
     codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP"
     codesign --verify --strict --verbose=1 "$APP" 2>&1 | sed 's/^/    /'
 else
     echo "==> ad-hoc 署名（Developer ID が見つからないため。配布はできない）"
+    codesign --force --deep --sign - "$CONTENTS/Frameworks/Sparkle.framework"
     codesign --force --sign - "$CONTENTS/MacOS/midistaged"
     codesign --force --sign - "$CONTENTS/MacOS/MidistageApp"
     codesign --force --sign - "$APP"
 fi
 touch "$APP"
-echo "==> できました: $APP (${SHORT_VERSION} / ${BUILD_VERSION})"
+echo "==> できました: $APP (${SHORT_VERSION} / ${BUILD_VERSION}.${COMMIT})"
 
 if [ "$MAKE_DIST" = "1" ]; then
     [ -n "$IDENTITY" ] || { echo "配布には Developer ID 署名が必要です" >&2; exit 1; }
@@ -139,7 +167,17 @@ if [ "$MAKE_DIST" = "1" ]; then
     spctl -a -t install "$DMG" 2>&1 | sed 's/^/    /' || { echo "DMG の検証に失敗" >&2; exit 1; }
     if [ "$PUBLISH" = "1" ]; then
         gh release view "$RELEASE_TAG" >/dev/null 2>&1 || gh release create "$RELEASE_TAG" --title "$RELEASE_TAG" --generate-notes >/dev/null
-        gh release upload "$RELEASE_TAG" "$DMG" --clobber >/dev/null
+        # appcast（EdDSA 署名入り）を DMG から作り、一緒に添付する。アプリは最新リリースの appcast.xml を見る
+        echo "==> appcast"
+        FEED_DIR="$(mktemp -d)"
+        cp "$DMG" "$FEED_DIR/"
+        "$SPARKLE_BIN/generate_appcast" --account "$SPARKLE_ACCOUNT" \
+            --download-url-prefix "https://github.com/chronista-club/midistage/releases/download/${RELEASE_TAG}/" \
+            --link "https://github.com/chronista-club/midistage/releases/tag/${RELEASE_TAG}" \
+            -o "$DIST/appcast.xml" "$FEED_DIR" 2>&1 | sed 's/^/    /'
+        rm -rf "$FEED_DIR"
+        grep -q 'sparkle:edSignature' "$DIST/appcast.xml" || { echo "appcast に署名がありません" >&2; exit 1; }
+        gh release upload "$RELEASE_TAG" "$DMG" "$DIST/appcast.xml" --clobber >/dev/null
         echo "==> $(gh release view "$RELEASE_TAG" --json url -q .url)"
     fi
 fi
