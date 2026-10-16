@@ -84,3 +84,37 @@ import Testing
     #expect(snapshot.service == nil)
     #expect(snapshot.devices.count == 2)
 }
+
+/// design 06: setup の欄（Rust の wire テストが書く fixture）
+@Test func setupFieldsDecodeAndOldServicesStillDecode() throws {
+    let url = Bundle.module.url(forResource: "snapshot-setups", withExtension: "json", subdirectory: "Fixtures")!
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: url))
+    let roto = try #require(snapshot.devices.first)
+    #expect(roto.configuring == true)
+    #expect(roto.currentSetup == 6)
+    #expect(roto.setupOwners?["vp"] == [6])
+    #expect(roto.setupOwners?["ladyland"] == [0, 1, 2, 3])
+    #expect(roto.configError == nil)
+    // 旧いサービス（欄が無い）
+    let old = Bundle.module.url(forResource: "snapshot", withExtension: "json", subdirectory: "Fixtures")!
+    let before = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: old))
+    #expect(before.devices[0].configuring == nil && before.devices[0].currentSetup == nil)
+}
+
+/// design 06: Rust が書く fixture（midistage-protocol の device_setup_fields_match_the_swift_fixture）を読める
+@Test func rustSnapshotDecodesDeviceSetups() throws {
+    let url = Bundle.module.url(forResource: "snapshot-setups", withExtension: "json", subdirectory: "Fixtures")!
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: url))
+    let roto = try #require(snapshot.devices.first)
+    #expect(roto.configuring == true)
+    #expect(roto.currentSetup == 6)
+    #expect(roto.setupOwners == ["ladyland": [0, 1, 2, 3], "vp": [6]])
+    #expect(roto.configError == nil)
+}
+
+/// 旧いサービスの snapshot（setup の欄が無い）も読める
+@Test func olderSnapshotHasNoSetupFields() throws {
+    let url = Bundle.module.url(forResource: "snapshot", withExtension: "json", subdirectory: "Fixtures")!
+    let snapshot = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: url))
+    #expect(snapshot.devices[0].configuring == nil && snapshot.devices[0].setupOwners == nil)
+}

@@ -85,6 +85,14 @@ pub fn get_switch(setup: u8, control: u8) -> Vec<u8> {
     request(MIDI, 0x06, &[setup, control])
 }
 
+// ---- 切り替え ----------------------------------------------------------------
+
+/// SET SETUP（02 03）: 表に出す setup を選ぶ（本体の SEL と同じ。応答は RC だけ）。
+/// 保存領域は書き換えない — 書き込み（SET_* / CLEAR_*）とは別物（design 06）
+pub fn set_setup(setup: u8) -> Vec<u8> {
+    request(MIDI, 0x03, &[setup])
+}
+
 // ---- 応答の読み取り ----------------------------------------------------------
 
 /// 13 バイトの名前欄 → 文字列（NULL まで。ASCII 以外は置き換え）
@@ -428,6 +436,11 @@ mod tests {
         assert_eq!(get_setup(0x3F), [0x5A, 0x02, 0x02, 0x00, 0x01, 0x3F]);
         assert_eq!(get_knob(2, 0x1F), [0x5A, 0x02, 0x05, 0x00, 0x02, 2, 0x1F]);
         assert_eq!(get_switch(2, 7), [0x5A, 0x02, 0x06, 0x00, 0x02, 2, 7]);
+    }
+
+    #[test]
+    fn selecting_a_setup_is_one_byte_of_data() {
+        assert_eq!(set_setup(6), [0x5A, 0x02, 0x03, 0x00, 0x01, 6]);
     }
 
     #[test]

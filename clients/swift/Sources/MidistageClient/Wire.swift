@@ -32,12 +32,21 @@ public struct DeviceView: Codable, Sendable, Equatable, Identifiable {
     public var controls: [Control]
     public var nativePorts: NativePorts
     public var error: String?
+    /// 設定ポート（Roto の Serial）を開いて用事をしている間 true。その間 Roto の MIDI は止まる（design 06）。旧いサービスには無い
+    public var configuring: Bool?
+    /// midistage が最後に選んだ setup
+    public var currentSetup: Int?
+    /// setup の持ち主（client_id → setup）
+    public var setupOwners: [String: [Int]]?
+    /// 設定ポートの用事が失敗した理由
+    public var configError: String?
     public var id: String { deviceID }
     public var nativeInputs: [String] { nativePorts.inputs }
     public var nativeOutputs: [String] { nativePorts.outputs }
     enum CodingKeys: String, CodingKey {
         case deviceID = "device_id", profileID = "profile_id", name, present, assignment, phase, lease
         case releasingTo = "releasing_to", controls, nativePorts = "native_ports", error
+        case configuring, currentSetup = "current_setup", setupOwners = "setup_owners", configError = "config_error"
     }
 }
 /// サービス自身の版と実行ファイル（design 05「常駐と配布」）。旧いサービスには無い

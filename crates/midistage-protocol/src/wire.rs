@@ -52,6 +52,33 @@ pub struct DeviceView {
     pub controls: Vec<Control>,
     pub native_ports: NativePorts,
     pub error: Option<String>,
+    /// 機材の設定ポート（Roto の Serial）を開いて用事をしている間 true。その間 Roto の MIDI は止まる（design 06）
+    #[serde(default)]
+    pub configuring: bool,
+    /// midistage が最後に選んだ setup。本体の SEL で変えられた分は知らない
+    #[serde(default)]
+    pub current_setup: Option<u8>,
+    /// setup の持ち主（client_id → setup）
+    #[serde(default)]
+    pub setup_owners: std::collections::BTreeMap<String, Vec<u8>>,
+    /// 設定ポートの用事が失敗した理由（他のプロセスがポートを開いている など）
+    #[serde(default)]
+    pub config_error: Option<String>,
+}
+
+/// 自分の setup を登録する（design 06）。空の配列で取り消し。他のアプリの setup は取れない
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SetDeviceSetups {
+    pub device_id: String,
+    pub setups: Vec<u8>,
+}
+
+/// lease を持つアプリが、自分の setup の中で切り替える（design 06）
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct SelectSetup {
+    pub device_id: String,
+    pub lease_token: String,
+    pub setup: u8,
 }
 
 /// サービス自身の事実（design 05「常駐と配布」）。app が「同梱版が動いているか」「.app を更新したが
@@ -142,4 +169,68 @@ pub struct Endpoint {
     pub server_epoch: String,
     pub certificate_der: Vec<u8>,
     pub auth_token: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{Assignment, Lease, Phase};
+
+    /// design 06 の欄を含む snapshot。Swift SDK（clients/swift/Tests/.../snapshot-setups.json）が同じものを読む。
+    /// 形を意図して変えたら `UPDATE_FIXTURE=1 cargo test -p midistage-protocol` で書き直し、Swift のテストも通す
+    #[test]
+    fn device_setup_fields_match_the_swift_fixture() {
+        let snapshot = Snapshot {
+            sequence: 7,
+            protocol_version: 1,
+            server_epoch: "boot".into(),
+            session_id: "v".into(),
+            devices: vec![DeviceView {
+                state: DeviceState {
+                    device_id: "roto".into(),
+                    profile_id: "roto".into(),
+                    name: "Roto-Control".into(),
+                    present: true,
+                    assignment: Assignment {
+                        client_id: Some("vp".into()),
+                        revision: 3,
+                        expected: false,
+                    },
+                    phase: Phase::Active,
+                    lease: Some(Lease {
+                        session_id: "v".into(),
+                        token: "boot:4".into(),
+                    }),
+                    releasing_to: None,
+                },
+                controls: vec![],
+                native_ports: NativePorts::default(),
+                error: None,
+                configuring: true,
+                current_setup: Some(6),
+                setup_owners: [
+                    ("ladyland".to_string(), vec![0, 1, 2, 3]),
+                    ("vp".to_string(), vec![6]),
+                ]
+                .into(),
+                config_error: None,
+            }],
+            service: ServiceInfo::default(),
+        };
+        let got = serde_json::to_string_pretty(&snapshot).unwrap() + "\n";
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../clients/swift/Tests/MidistageClientTests/Fixtures/snapshot-setups.json");
+        if std::env::var_os("UPDATE_FIXTURE").is_some() {
+            std::fs::write(&path, &got).unwrap();
+        }
+        assert_eq!(got, std::fs::read_to_string(&path).unwrap());
+        // 旧いサービスの snapshot（欄が無い）も読める
+        let old: DeviceView = serde_json::from_str(
+            r#"{"device_id":"nano","profile_id":"nanokontrol","name":"n","present":true,
+                "assignment":{"client_id":null,"revision":0,"expected":false},"phase":"off","lease":null,
+                "releasing_to":null,"controls":[],"native_ports":{"inputs":[],"outputs":[]},"error":null}"#,
+        )
+        .unwrap();
+        assert!(!old.configuring && old.current_setup.is_none() && old.setup_owners.is_empty());
+    }
 }
