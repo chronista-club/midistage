@@ -1230,6 +1230,8 @@ dependencies = [
  "anyhow",
  "clap",
  "club-unison",
+ "core-foundation",
+ "core-foundation-sys",
  "coremidi",
  "coremidi-sys",
  "libc",

@@ -36,6 +36,16 @@ enum Command {
     },
     /// CoreMIDI の物理ポートを列挙する。接続や MIDI 送信は行わない。
     ListPorts,
+    /// ROTO-CONTROL の設定を Serial（admin port）で全部読む。読み取りだけ。
+    /// 読んでいる間は Roto の MIDI が止まる（数十秒）。結果は JSON で保存する
+    RotoDump {
+        /// 保存先（既定 ./roto-dump.json）
+        #[arg(long, default_value = "roto-dump.json")]
+        out: PathBuf,
+        /// admin port を明示する（既定は VID/PID で探す）
+        #[arg(long)]
+        port: Option<String>,
+    },
 }
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -75,6 +85,49 @@ async fn main() -> anyhow::Result<()> {
         }
     };
     match args.command {
+        Command::RotoDump { out, port } => {
+            #[cfg(target_os = "macos")]
+            {
+                // 同期 I/O（最大 2 分弱）。async の runtime を塞がない
+                let dump = tokio::task::spawn_blocking(move || {
+                    midistaged::roto_admin::read_all(port.as_deref())
+                })
+                .await??;
+                std::fs::write(&out, serde_json::to_vec_pretty(&dump)?)?;
+                let free: Vec<_> = dump
+                    .setups
+                    .iter()
+                    .filter(|s| s.is_free())
+                    .map(|s| s.index)
+                    .collect();
+                println!(
+                    "port {} / FW {}.{}.{} ({}) / mode {:?} / current {:?}",
+                    dump.port,
+                    dump.firmware.major,
+                    dump.firmware.minor,
+                    dump.firmware.patch,
+                    dump.firmware.commit,
+                    dump.mode,
+                    dump.current_setup
+                );
+                for s in dump.setups.iter().filter(|s| !s.is_free()) {
+                    println!(
+                        "  setup {:02}: {:<13} knobs {:2} switches {:2}",
+                        s.index,
+                        s.name.as_deref().unwrap_or("?"),
+                        s.knobs.len(),
+                        s.switches.len()
+                    );
+                }
+                println!("free setups ({}): {:?}", free.len(), free);
+                println!(
+                    "port open {} ms for {} requests (MIDI was paused while open) -> {}",
+                    dump.port_open_ms,
+                    dump.requests,
+                    out.display()
+                );
+            }
+        }
         Command::ListPorts =>
         {
             #[cfg(target_os = "macos")]
