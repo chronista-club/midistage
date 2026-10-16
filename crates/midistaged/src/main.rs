@@ -179,6 +179,33 @@ async fn main() -> anyhow::Result<()> {
             let shared = service.runtime.clone();
             let trace_dir = directory.clone();
             midistaged::trace::refresh(&trace_dir);
+            // design 06: 設定ポート（Roto の Serial）の用事を 1 つずつ。MIDI の poll を止めないよう別 thread
+            #[cfg(target_os = "macos")]
+            {
+                let setups = service.runtime.clone();
+                let setups_running = running.clone();
+                std::thread::Builder::new()
+                    .name("device-setups".into())
+                    .spawn(move || {
+                        while setups_running.load(Ordering::Acquire) {
+                            let job = {
+                                let mut r = setups.lock().expect("runtime mutex poisoned");
+                                r.plan_setup_switches();
+                                r.next_setup_job()
+                            };
+                            if let Some(job) = job {
+                                let result = midistaged::roto_admin::select_setup(job.setup)
+                                    .map_err(|e| e.to_string());
+                                setups
+                                    .lock()
+                                    .expect("runtime mutex poisoned")
+                                    .finish_setup_job(&job, result);
+                            } else {
+                                std::thread::sleep(std::time::Duration::from_millis(50));
+                            }
+                        }
+                    })?;
+            }
             let worker = std::thread::spawn(move || {
                 #[cfg(target_os = "macos")]
                 {

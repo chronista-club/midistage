@@ -125,7 +125,7 @@ impl SetupDump {
 }
 
 #[cfg(target_os = "macos")]
-pub use port::{list_serial_ports, read_all, with_port};
+pub use port::{list_serial_ports, read_all, select_setup, with_port};
 
 #[cfg(target_os = "macos")]
 mod port {
@@ -351,6 +351,14 @@ mod port {
         // with_port から戻った時点でポートは閉じている
         dump.port_open_ms = started.elapsed().as_millis();
         Ok(dump)
+    }
+
+    /// setup を選ぶ（SET SETUP）。開く → 1 往復 → 閉じる
+    pub fn select_setup(setup: u8) -> anyhow::Result<()> {
+        with_port(None, |s| match s.transact(&rs::set_setup(setup), 0)? {
+            (rs::RC_OK, _) => Ok(()),
+            (code, _) => anyhow::bail!("ROTO rejected SET SETUP {setup} (rc={code:02X})"),
+        })
     }
 
     // ---- IOKit: シリアルポートと USB の素性 ----

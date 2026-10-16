@@ -39,6 +39,15 @@ public final class Client: Sendable {
     public func sendMIDI(deviceID: String, leaseToken: String, portName: String, bytes: [UInt8]) async throws -> Snapshot {
         try await request(SendMIDIRequest(deviceID: deviceID, leaseToken: leaseToken, portName: portName, bytes: bytes))
     }
+    /// 自分の setup（Roto 本体の保存枠 0〜63）を登録する。空で取り消し。lease が移ってきたとき、
+    /// midistage がこの中の最後に選んだもの（無ければ先頭）へ切り替える（design 06）
+    public func setDeviceSetups(deviceID: String, setups: [Int]) async throws -> Snapshot {
+        try await request(SetDeviceSetupsRequest(deviceID: deviceID, setups: setups))
+    }
+    /// lease を持つ間、自分の setup の中で切り替える。受け付けたら返り、完了は snapshot の `configuring` / `currentSetup` で見る
+    public func selectSetup(deviceID: String, leaseToken: String, setup: Int) async throws -> Snapshot {
+        try await request(SelectSetupRequest(deviceID: deviceID, leaseToken: leaseToken, setup: setup))
+    }
     public func snapshot() async throws -> Snapshot { try await request(SnapshotRequest()) }
     public func close() async { await channel.close(); await connection.disconnect() }
     private func request<R: UnisonRequest & Sendable>(_ request: R) async throws -> Snapshot where R.Response == Reply {
@@ -109,4 +118,20 @@ private struct SendMIDIRequest: UnisonRequest, Sendable {
     var portName: String
     var bytes: [UInt8]
     enum CodingKeys: String, CodingKey { case deviceID = "device_id", leaseToken = "lease_token", portName = "port_name", bytes }
+}
+
+private struct SetDeviceSetupsRequest: UnisonRequest, Sendable {
+    static let method = "SetDeviceSetups"
+    typealias Response = Reply
+    var deviceID: String
+    var setups: [Int]
+    enum CodingKeys: String, CodingKey { case deviceID = "device_id", setups }
+}
+private struct SelectSetupRequest: UnisonRequest, Sendable {
+    static let method = "SelectSetup"
+    typealias Response = Reply
+    var deviceID: String
+    var leaseToken: String
+    var setup: Int
+    enum CodingKeys: String, CodingKey { case deviceID = "device_id", leaseToken = "lease_token", setup }
 }
