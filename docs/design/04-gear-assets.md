@@ -43,7 +43,8 @@ midistage は「宣言ファイルが正本、機材上の状態は投影」の�
 - git に入れるのは**生成元だけ**（gear.json、.blend、スクリプト、プレビュー PNG）
 - `gear/build.py` が `~/Library/Application Support/midistage/gear/` に書く:
   `<id>.usdz`（Ladyland）、`<id>.glb`（アプリ B、Web）、`<id>.json`（ID を揃え、control を付け、
-  鍵盤展開済み）、`manifest.json`（schema version / 各ファイルの sha256 / 生成元 commit）。
+  鍵盤展開済み）、`<id>.blend`（見た目の層の写し。アプリの Blender シーン — 机・棚 — がリンクする）、
+  `manifest.json`（schema version / 各ファイルの sha256 / 生成元 commit）。
   環境光（environment.exr）は机・照明の産物なのでアプリ側に残す（§4 範囲外と同じ線）
 - Ladyland は midistage の置き場を優先し、無ければ従来の `ladyland/gear` にフォールバック。
   アプリ B は同じ置き場の GLB を読む
@@ -81,6 +82,14 @@ gear/
 control の対応は profile（device_input.rs）があるものはそれに従う（nanokontrol: S 0-7 / M 8-15 /
 R 16-23 / TRACK 24-25、xtouch: fader 0-7 + master 8、lpd8: pad / knob 0-7）。無いものは
 section の並び順。transport ボタンなど profile が読まない部品には付けない。
+
+### なぜ .blend も配る（2026-10-14）
+
+Ladyland の机・棚の Blender シーン（studio.blend）は機材を**リンク**して置いている。リンク先を
+兄弟の midistage checkout（`../midistage/gear/…`）にすると、その checkout がどのブランチに
+いるかで壊れる（実際、主 checkout は gear/ が入る前のブランチに止まっていた）。アプリが USDZ を
+配布物から読むのと同じ線で、Blender シーンも配布物の `.blend` をリンクする。編集は repo の
+`gear/<id>/<id>.blend` で行い、build.py で配布物へ写す。
 
 ## Status log
 
