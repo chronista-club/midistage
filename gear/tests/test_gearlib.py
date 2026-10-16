@@ -80,6 +80,38 @@ class Keybed(unittest.TestCase):
         self.assertEqual(keys[0]["name"], "key_36")
 
 
+class Heights(unittest.TestCase):
+    """推定だった縦の内訳を同じ比率で伸ばし、全高（公式の仕様値）に合わせる"""
+
+    def spec(self):
+        return {"id": "x", "size": [100, 50, 40], "body_height": 20,
+                "parts": [{"name": "knob_1", "kind": "knob", "center": [0, 0], "size": [10, 10, 15], "base": 22},
+                          {"name": "pad_1", "kind": "pad", "center": [0, 0], "size": [10, 10, 3]}],
+                "keybed": {"lowest": 48, "count": 2, "left": 0, "front": 0, "white_width": 20,
+                           "white_length": 80, "black_width": 10, "black_length": 50, "height": 10, "base": 12}}
+
+    def test_scales_every_vertical_estimate(self):
+        out = gearlib.scale_heights(self.spec(), 1.5)
+        self.assertEqual(out["body_height"], 30)
+        knob = out["parts"][0]
+        self.assertEqual(knob["size"], [10, 10, 22.5])
+        self.assertEqual(knob["base"], 33)
+        self.assertEqual(out["parts"][1]["size"][2], 4.5)
+        self.assertEqual(out["keybed"]["height"], 15)
+        self.assertEqual(out["keybed"]["base"], 18)
+
+    def test_keeps_footprint_and_spec(self):
+        out = gearlib.scale_heights(self.spec(), 1.5)
+        self.assertEqual(out["size"], [100, 50, 40], "全高は仕様値（事実）なので触らない")
+        self.assertEqual(out["parts"][0]["center"], [0, 0])
+        self.assertEqual(out["parts"][0]["size"][:2], [10, 10])
+
+    def test_does_not_mutate_input(self):
+        spec = self.spec()
+        gearlib.scale_heights(spec, 2)
+        self.assertEqual(spec["body_height"], 20)
+
+
 class Manifest(unittest.TestCase):
     def test_manifest_hashes_every_file(self):
         import tempfile
@@ -92,6 +124,16 @@ class Manifest(unittest.TestCase):
             self.assertEqual(m["source_commit"], "abc1234")
             self.assertEqual(set(m["gear"]["lpd8"]), {"usdz", "glb", "json"})
             self.assertEqual(len(m["gear"]["lpd8"]["glb"]["sha256"]), 64)
+
+    def test_manifest_includes_blend_when_shipped(self):
+        """見た目の層もアプリの Blender シーン（机・棚）がリンクできるよう配布物に置く"""
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            for name in ("lpd8.usdz", "lpd8.blend"):
+                with open(os.path.join(d, name), "wb") as f:
+                    f.write(b"x")
+            m = gearlib.manifest(d, source_commit="abc1234", gear_ids=["lpd8"])
+            self.assertIn("blend", m["gear"]["lpd8"])
 
 
 if __name__ == "__main__":

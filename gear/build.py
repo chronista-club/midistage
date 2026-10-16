@@ -7,12 +7,14 @@
   <id>.usdz   RealityKit 向け（アプリ A）
   <id>.glb    Web / Three.js 向け（アプリ B）
   <id>.json   意味の層（ID を揃え、control を付け、鍵盤を展開済み）
+  <id>.blend  見た目の層の写し（アプリの Blender シーン — 机・棚 — がリンクする。編集は repo の方で）
   manifest.json  schema / 生成元 commit / sha256
 
 git に入れるのは生成元だけ。ここで .blend は保存しない。
 """
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -71,7 +73,10 @@ def select_only(objs):
 def export(spec, out):
     gid = spec["id"]
     root_name = spec.get("blend_root", gid)
-    bpy.ops.wm.open_mainfile(filepath=os.path.join(HERE, gid, f"{gid}.blend"))
+    source = os.path.join(HERE, gid, f"{gid}.blend")
+    # 見た目の層はそのまま写す（Blender で開いて保存し直さない = 中身を変えない）
+    shutil.copy2(source, os.path.join(out, f"{gid}.blend"))
+    bpy.ops.wm.open_mainfile(filepath=source)
     objs = gear_objects(root_name)
     # 配布物の root 名は機材 ID（アプリは ID で掴む）。保存はしないので .blend は変わらない
     objs[0].name = gid

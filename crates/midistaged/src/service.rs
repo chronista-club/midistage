@@ -195,11 +195,16 @@ pub fn snapshot(runtime: &Runtime, session: &str) -> Snapshot {
                     state.phase = midistage_protocol::Phase::Error;
                     ports = NativePorts::default();
                 }
+                let id = state.device_id.clone();
                 DeviceView {
                     state,
                     controls: vec![],
                     native_ports: ports,
                     error,
+                    configuring: runtime.configuring.contains(&id),
+                    current_setup: runtime.current_setup.get(&id).copied(),
+                    setup_owners: runtime.setup_owners(&id),
+                    config_error: runtime.config_errors.get(&id).cloned(),
                 }
             })
             .collect(),
@@ -341,6 +346,10 @@ fn dispatch(
                     .quiesced(&request.device_id, session, &request.lease_token)?;
                 // I/O adapter の in-flight 完了を別途確認するまで drained は呼ばない。
             }
+            "SetDeviceSetups" => {
+                runtime.set_device_setups(session, &serde_json::from_value(payload)?)?
+            }
+            "SelectSetup" => runtime.select_setup(session, &serde_json::from_value(payload)?)?,
             "Present" => {
                 let request: Present = serde_json::from_value(payload)?;
                 runtime.broker.authorize_output(

@@ -1,0 +1,49 @@
+{
+  "sequence": 7,
+  "protocol_version": 1,
+  "server_epoch": "boot",
+  "session_id": "v",
+  "devices": [
+    {
+      "device_id": "roto",
+      "profile_id": "roto",
+      "name": "Roto-Control",
+      "present": true,
+      "assignment": {
+        "client_id": "vp",
+        "revision": 3,
+        "expected": false
+      },
+      "phase": "active",
+      "lease": {
+        "session_id": "v",
+        "token": "boot:4"
+      },
+      "releasing_to": null,
+      "controls": [],
+      "native_ports": {
+        "inputs": [],
+        "outputs": []
+      },
+      "error": null,
+      "configuring": true,
+      "current_setup": 6,
+      "setup_owners": {
+        "ladyland": [
+          0,
+          1,
+          2,
+          3
+        ],
+        "vp": [
+          6
+        ]
+      },
+      "config_error": null
+    }
+  ],
+  "service": {
+    "version": "",
+    "executable": ""
+  }
+}

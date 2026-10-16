@@ -150,7 +150,8 @@ struct MenuContent: View {
     }
 }
 
-/// spec 01 のステータス一覧（REQ-APP-001〜003）。挿さっている / 担当 / 握っている / phase を別の列で
+/// spec 01 のステータス一覧（REQ-APP-001〜003）。担当 / 握っている / phase を別の列で。
+/// 「挿さっている / 見当たらない」は機材名の濃淡で表す（mako 2026-10-12「タイトルですでに表現できてるね」）
 struct StatusView: View {
     var model: AppModel
     var body: some View {
@@ -181,8 +182,6 @@ struct StatusView: View {
                         .help(row.id)
                     }
                     .width(min: 180, ideal: 230)
-                    TableColumn("挿さっている") { row in Text(row.presence).foregroundStyle(row.presence == "挿さっている" ? .primary : .secondary) }
-                        .width(min: 90, ideal: 100)
                     TableColumn("担当") { row in AppLabel(name: row.assignment) }.width(min: 90, ideal: 120)
                     TableColumn("握っている") { row in AppLabel(name: row.holder) }.width(min: 90, ideal: 120)
                     TableColumn("phase") { row in
