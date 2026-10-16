@@ -1,5 +1,5 @@
 {
-  "originHash" : "85fca74888febc28ed1a7155e0f6307273df7d070400aa6c6f227e25c32be77a",
+  "originHash" : "95c31ea0cb26c3d8a1b1fea56b51a9977a3870ab2e0e1ae62b69bb7576f645a8",
   "pins" : [
     {
       "identity" : "club-unison",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "63eff2ed86846fafd50a726f693e45cfe7e9595d",
         "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "sparkle",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/sparkle-project/Sparkle",
+      "state" : {
+        "revision" : "eef1a539a373c1f1a320624b1130fc5de7b2e100",
+        "version" : "2.10.0"
       }
     },
     {

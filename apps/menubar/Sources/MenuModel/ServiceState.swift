@@ -41,10 +41,35 @@ public struct ServiceState: Sendable, Equatable {
     public var appAtLogin: Bool
     /// 5. MIDI トレース（開発用）がオンか（フラグファイルの有無）
     public var tracing: Bool
-    public init(registration: Registration, running: Running, bundled: Bundled, appAtLogin: Bool = false, tracing: Bool = false) {
+    /// 6. いま lease を持っているアプリ（snapshot から。サービスの入れ替えで切れる相手）
+    public var leaseHolders: [String]
+    public init(registration: Registration, running: Running, bundled: Bundled, appAtLogin: Bool = false, tracing: Bool = false,
+                leaseHolders: [String] = []) {
         self.registration = registration; self.running = running; self.bundled = bundled; self.appAtLogin = appAtLogin
-        self.tracing = tracing
+        self.tracing = tracing; self.leaseHolders = leaseHolders
     }
+}
+
+/// アプリが新しくなったあと、動いているサービスをどうするか（REQ-APP-062）
+public enum ServiceUpdate: Sendable, Equatable {
+    case none
+    /// 誰も使っていない。その場で入れ替えても何も切れない
+    case restartNow
+    /// 使っているアプリがある。空いたら入れ替える
+    case waitForQuiet(holders: [String])
+}
+
+/// 同梱版と稼働中の版が違い、稼働中が同梱のバイナリ（開発用の別バイナリではない）で、
+/// まだこの版で自動の入れ替えを試していないときだけ動く（純粋）
+public func serviceUpdate(_ s: ServiceState, tried: String?) -> ServiceUpdate {
+    guard s.registration == .enabled,
+          case .connected(let version?, let executable, _) = s.running,
+          isNewer(s.bundled.version, than: version),   // 古いアプリで新しいサービスを置き換えない
+          executable == nil || executable == s.bundled.executable,
+          tried != s.bundled.version
+    else { return .none }
+    let holders = Array(Set(s.leaseHolders)).sorted()
+    return holders.isEmpty ? .restartNow : .waitForQuiet(holders: holders)
 }
 
 public enum Icon: Sendable, Equatable { case normal, attention, stopped }
@@ -85,7 +110,12 @@ public func summarize(_ s: ServiceState) -> MenuSummary {
         if let version, version != s.bundled.version {
             mismatch = true
             icon = .attention
-            lines.append("稼働中 \(version) / 同梱 \(s.bundled.version) — 再起動で入れ替わります")
+            let holders = Array(Set(s.leaseHolders)).sorted()
+            if holders.isEmpty || foreign {
+                lines.append("稼働中 \(version) / 同梱 \(s.bundled.version) — 再起動で入れ替わります")
+            } else {
+                lines.append("サービスの更新待ち（\(holders.joined(separator: "、")) が使用中）— 空いたら \(s.bundled.version) に入れ替えます")
+            }
         }
         if devices.releasingStuck > 0 {
             icon = .attention
@@ -124,4 +154,18 @@ public func summarize(_ s: ServiceState) -> MenuSummary {
 
     return MenuSummary(icon: icon, title: title, lines: lines,
                        needsApproval: needsApproval, foreignBinary: foreign, versionMismatch: mismatch)
+}
+
+/// 版を数字の並びとして比べる（"0.10.0" は "0.9.0" より新しい）。数字で読めない版は新しいとみなさない（純粋）
+public func isNewer(_ a: String, than b: String) -> Bool {
+    func parts(_ v: String) -> [Int]? {
+        let ps = v.split(separator: ".").map { Int($0) }
+        return ps.contains(nil) || ps.isEmpty ? nil : ps.compactMap { $0 }
+    }
+    guard let x = parts(a), let y = parts(b) else { return false }
+    for i in 0..<max(x.count, y.count) {
+        let l = i < x.count ? x[i] : 0, r = i < y.count ? y[i] : 0
+        if l != r { return l > r }
+    }
+    return false
 }

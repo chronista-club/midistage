@@ -149,6 +149,19 @@ midistage.app/Contents/
 - **info の流れ**（REQ-APP-053）: `crates/midistaged/src/flow.rs` の `changes(before, after, name_of)`（純粋、テスト）が Broker の前後を機材ごとに 1 行へ。`Runtime` は「最後に出した状態」`flow_seen` と session → app 名を持ち、`log_flow()` がそこからの差分を出して更新する（重複も取りこぼしもしない）。呼ぶのは 要求の処理（`dispatch`、Snapshot 以外）・切断・poll の終わり・I/O 障害。仮想ポートの開閉は `NativeBridge` が直接 info に
 - 次の段: app に「トレース」窓を足して流して見る（サービス → app に流す口が要る = wire 拡張）。今はファイル
 
+## 自動アップデート（REQ-APP-060〜062）
+
+アプリの更新は Sparkle 2 に任せ、サービスの入れ替えだけ自前で決める。
+
+- **appcast**: `scripts/build-app.sh --publish` が、公証済みの DMG から Sparkle の `generate_appcast` で `appcast.xml` を作り（EdDSA 署名入り）、DMG と一緒に Release へ添付する。アプリの `SUFeedURL` は `https://github.com/chronista-club/midistage/releases/latest/download/appcast.xml`（GitHub が最新リリースの添付へ転送する。Pages は使わない）
+- **版**: Sparkle は `CFBundleVersion` で新旧を比べる。今の `<コミット数>.<ハッシュ>` はハッシュの部分で順序が壊れるので、`CFBundleVersion` = コミット数（単調に増える）にし、ハッシュは `MidistageCommit` に移す。表示用の版（`CFBundleShortVersionString`）は今どおり tag
+- **同梱**: `Sparkle.framework` を `Contents/Frameworks` に入れ、`MidistageApp` に `@executable_path/../Frameworks` の rpath を足す。署名は内側から（Installer.xpc / Downloader.xpc / Autoupdate / Updater.app → framework → midistaged → MidistageApp → .app）
+- **鍵**: `generate_keys` が login keychain に秘密鍵を置き、公開鍵を出す。公開鍵は `build-app.sh` に書く（公開して困らない）。秘密鍵の控えは別に取る
+- **開発ビルド**（`swift run`、Info.plist に `SUFeedURL` が無い）では updater を起動しない
+- **サービスの入れ替え**: 判断は MenuModel の純粋関数 `serviceUpdate(state, tried:)`。入力は 稼働中の版・実行ファイル、同梱の版・実行ファイル、lease を持つアプリ、前に試した版。出力は「何もしない / 今すぐ再起動 / 空くのを待つ（誰が使っているか）」。アプリの 3 秒ごとの refresh で評価し、「今すぐ」なら `Residency.restart`（解除 → 登録）を 1 回だけ呼ぶ
+- 制約: 版の比較は tag 単位。nightly の手元ビルドは版が同じなので、この自動入れ替えの対象にならない（今どおりメニューから再起動する）
+- v0.1.0 は Sparkle を持たないので、Sparkle 入りの最初の版だけは手で入れる
+
 ## 未決
 
 - 表示名（display_name）と **bundle id** を snapshot の担当 / lease に載せる wire 拡張（design 03 側）。今は client_id と bundle id の末尾一致（`vp` ↔ `tech.anycreative.vp`）でアイコンを引いている（`AppIcons`）。載せるなら `schemas/midistage.kdl` と protocol / Swift SDK / fixture を同じ PR で

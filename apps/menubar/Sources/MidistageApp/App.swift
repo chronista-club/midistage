@@ -11,10 +11,11 @@ let log = Logger(subsystem: "club.chronista.midistage", category: "menubar")
 struct MidistageApp: App {
     @State private var model = AppModel()
     @State private var logs = LogViewModel()
+    @State private var updates = Updates()
 
     var body: some Scene {
         MenuBarExtra {
-            MenuContent(model: model, logs: logs)
+            MenuContent(model: model, logs: logs, updates: updates)
         } label: {
             Image(systemName: model.summary.icon.symbol)
         }
@@ -57,6 +58,8 @@ final class AppModel {
     var rows: [DeviceRow] = []
     var summary: MenuSummary { summarize(state) }
     var lastError: String?
+    /// 自動でサービスを入れ替えた同梱版（同じ版では 1 回だけ試す。REQ-APP-062）
+    private var triedServiceUpdate: String?
     private let probe = ServiceProbe()
     private var task: Task<Void, Never>?
 
@@ -82,12 +85,21 @@ final class AppModel {
     func refresh() async {
         let result = await probe.probe()
         rows = statusRows(result.devices)
-        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(), appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn())
+        // lease を持つアプリ（この画面自身は観察専用なので持たない）
+        let holders = result.devices.filter { $0.held && !$0.heldByMe }.map { $0.assignedTo ?? "?" }
+        let next = ServiceState(registration: Residency.registration(), running: result.running, bundled: Residency.bundled(),
+                                appAtLogin: Residency.appAtLogin(), tracing: MidiTrace.isOn(), leaseHolders: holders)
         if next != state {
             // 状態が変わったときだけ。理由をそのまま残す（spec REQ-APP-002: 黙って空にしない）
             log.notice("registration=\(String(describing: next.registration), privacy: .public) running=\(String(describing: next.running), privacy: .public) summary=\(summarize(next).title, privacy: .public)")
         }
         state = next
+        if serviceUpdate(next, tried: triedServiceUpdate) == .restartNow {
+            // アプリが新しくなり、誰も使っていない。入れ替えても何も切れない
+            triedServiceUpdate = next.bundled.version
+            log.notice("service update: restarting midistaged to bundled \(next.bundled.version, privacy: .public) (no app holds a lease)")
+            act(Residency.restart)
+        }
     }
 
     func act(_ f: () throws -> Void) {
@@ -99,6 +111,7 @@ final class AppModel {
 struct MenuContent: View {
     var model: AppModel
     var logs: LogViewModel
+    var updates: Updates
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -146,6 +159,9 @@ struct MenuContent: View {
             NSWorkspace.shared.open(logs)
         }
         Divider()
+        if updates.available {
+            Button("アップデートを確認…") { updates.checkForUpdates() }
+        }
         Button("midistage を終了") { NSApp.terminate(nil) }
     }
 }
