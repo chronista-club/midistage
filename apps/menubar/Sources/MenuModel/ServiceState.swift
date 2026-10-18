@@ -109,12 +109,17 @@ public func summarize(_ s: ServiceState) -> MenuSummary {
         }
         if let version, version != s.bundled.version {
             mismatch = true
-            icon = .attention
             let holders = Array(Set(s.leaseHolders)).sorted()
-            if holders.isEmpty || foreign {
-                lines.append("稼働中 \(version) / 同梱 \(s.bundled.version) — 再起動で入れ替わります")
+            if !isNewer(s.bundled.version, than: version) && !foreign {
+                // 同梱の方が古い（nightly の手元ビルドなど）。入れ替えないので、注意にはしない
+                lines.append("稼働中 \(version) / 同梱 \(s.bundled.version)（同梱の方が古いので自動では入れ替えません）")
             } else {
-                lines.append("サービスの更新待ち（\(holders.joined(separator: "、")) が使用中）— 空いたら \(s.bundled.version) に入れ替えます")
+                icon = .attention
+                if holders.isEmpty || foreign {
+                    lines.append("稼働中 \(version) / 同梱 \(s.bundled.version) — 再起動で入れ替わります")
+                } else {
+                    lines.append("サービスの更新待ち（\(holders.joined(separator: "、")) が使用中）— 空いたら \(s.bundled.version) に入れ替えます")
+                }
             }
         }
         if devices.releasingStuck > 0 {
