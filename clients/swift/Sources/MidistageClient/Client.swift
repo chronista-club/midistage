@@ -48,6 +48,11 @@ public final class Client: Sendable {
     public func selectSetup(deviceID: String, leaseToken: String, setup: Int) async throws -> Snapshot {
         try await request(SelectSetupRequest(deviceID: deviceID, leaseToken: leaseToken, setup: setup))
     }
+    /// setup の中身をまるごと書く（design 06 の段 C）。lease を持つ間、自分の台帳の setup にだけ。受け付けたら返り、
+    /// 進み具合は snapshot の `configuring` / `configError`。本体ができるまでは `not_implemented` が返る
+    public func applyDeviceSetup(deviceID: String, leaseToken: String, setup: Int, content: SetupContent) async throws -> Snapshot {
+        try await request(ApplyDeviceSetupRequest(deviceID: deviceID, leaseToken: leaseToken, setup: setup, content: content))
+    }
     public func snapshot() async throws -> Snapshot { try await request(SnapshotRequest()) }
     public func close() async { await channel.close(); await connection.disconnect() }
     private func request<R: UnisonRequest & Sendable>(_ request: R) async throws -> Snapshot where R.Response == Reply {
@@ -134,4 +139,13 @@ private struct SelectSetupRequest: UnisonRequest, Sendable {
     var leaseToken: String
     var setup: Int
     enum CodingKeys: String, CodingKey { case deviceID = "device_id", leaseToken = "lease_token", setup }
+}
+private struct ApplyDeviceSetupRequest: UnisonRequest, Sendable {
+    static let method = "ApplyDeviceSetup"
+    typealias Response = Reply
+    var deviceID: String
+    var leaseToken: String
+    var setup: Int
+    var content: SetupContent
+    enum CodingKeys: String, CodingKey { case deviceID = "device_id", leaseToken = "lease_token", setup, content }
 }

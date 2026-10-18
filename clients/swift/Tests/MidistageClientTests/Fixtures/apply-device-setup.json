@@ -1,0 +1,77 @@
+{
+  "device_id": "roto",
+  "lease_token": "boot:4",
+  "setup": 6,
+  "content": {
+    "name": "VP",
+    "knobs": [
+      {
+        "control": 0,
+        "mode": "cc7",
+        "channel": 3,
+        "param": 20,
+        "nrpn_address": 0,
+        "min": 0,
+        "max": 127,
+        "name": "Lane 1",
+        "color": 12,
+        "haptics": {
+          "kind": "smooth",
+          "indents": [
+            64
+          ]
+        }
+      },
+      {
+        "control": 1,
+        "mode": "cc14",
+        "channel": 3,
+        "param": 21,
+        "nrpn_address": 0,
+        "min": 0,
+        "max": 16383,
+        "name": "Mode",
+        "color": 5,
+        "haptics": {
+          "kind": "steps",
+          "names": [
+            "PIN",
+            "LANE",
+            "FLOW"
+          ]
+        }
+      },
+      {
+        "control": 2,
+        "mode": "nrpn14",
+        "channel": 3,
+        "param": 0,
+        "nrpn_address": 258,
+        "min": 0,
+        "max": 16383,
+        "name": "Pan",
+        "color": 30,
+        "haptics": {
+          "kind": "centre_indent"
+        }
+      }
+    ],
+    "switches": [
+      {
+        "control": 7,
+        "mode": "cc7",
+        "channel": 3,
+        "param": 27,
+        "nrpn_address": 0,
+        "min": 0,
+        "max": 127,
+        "name": "TALK",
+        "color": 2,
+        "led_on": 2,
+        "led_off": 70,
+        "action": "push",
+        "step_names": []
+      }
+    ]
+  }
+}

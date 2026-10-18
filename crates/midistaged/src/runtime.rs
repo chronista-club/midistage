@@ -307,13 +307,20 @@ impl Runtime {
         );
         self.switched_for
             .insert(request.device_id.clone(), request.lease_token.clone());
-        self.setup_jobs.push_back(SetupJob {
+        self.enqueue_setup_job(SetupJob {
             device_id: request.device_id.clone(),
             client_id: client,
             token: request.lease_token.clone(),
             setup: request.setup,
         });
         Ok(())
+    }
+
+    /// 用事を列に積む。**受け付けた時点から** その機材は configuring（列で待つ間も）。
+    /// アプリは「受付の応答のあと、configuring が false になり config_error が無い」を完了の印にする（design 06）
+    fn enqueue_setup_job(&mut self, job: SetupJob) {
+        self.configuring.insert(job.device_id.clone());
+        self.setup_jobs.push_back(job);
     }
 
     /// lease が新しい持ち主に移った機材について、その持ち主の setup へ切り替える用事を積む（同じ lease に 1 回）
@@ -347,11 +354,11 @@ impl Runtime {
         for job in jobs {
             self.switched_for
                 .insert(job.device_id.clone(), job.token.clone());
-            self.setup_jobs.push_back(job);
+            self.enqueue_setup_job(job);
         }
     }
 
-    /// 次の用事。lease が移っていたものは捨てる。返したら、その機材は configuring
+    /// 次の用事。lease が移っていたものは捨てる（捨てた機材に用事が残らなければ configuring を外す）
     pub fn next_setup_job(&mut self) -> Option<SetupJob> {
         while let Some(job) = self.setup_jobs.pop_front() {
             let current = self
@@ -361,16 +368,23 @@ impl Runtime {
                 .and_then(|d| d.lease.as_ref())
                 .is_some_and(|l| l.token == job.token);
             if current {
-                self.configuring.insert(job.device_id.clone());
                 return Some(job);
             }
+            self.settle_configuring(&job.device_id);
         }
         None
     }
 
+    /// 列に用事が残っていなければ configuring を外す
+    fn settle_configuring(&mut self, device_id: &str) {
+        if !self.setup_jobs.iter().any(|j| j.device_id == device_id) {
+            self.configuring.remove(device_id);
+        }
+    }
+
     /// 用事が済んだ。成功なら current_setup と last を記録、失敗なら理由を出す（繰り返さない）
     pub fn finish_setup_job(&mut self, job: &SetupJob, result: Result<(), String>) {
-        self.configuring.remove(&job.device_id);
+        self.settle_configuring(&job.device_id);
         match result {
             Ok(()) => {
                 self.config_errors.remove(&job.device_id);
@@ -923,6 +937,37 @@ mod setup_tests {
         assert!(r.next_setup_job().is_none());
     }
 
+    #[test]
+    fn configuring_is_true_from_acceptance_until_the_last_queued_job_finishes() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut r = runtime(dir.path());
+        r.hello("l", &hello("ladyland")).unwrap();
+        r.set_device_setups("l", &setups("roto", &[2, 3])).unwrap();
+        let token = take(&mut r, "l", "roto");
+        r.plan_setup_switches();
+        // まだ誰も列を取り出していない = 受け付けただけ。それでも configuring
+        assert!(r.configuring.contains("roto"), "受付の直後から configuring");
+        let select = |setup| SelectSetup {
+            device_id: "roto".into(),
+            lease_token: token.clone(),
+            setup,
+        };
+        r.select_setup("l", &select(3)).unwrap();
+        let first = r.next_setup_job().unwrap();
+        r.finish_setup_job(&first, Ok(()));
+        assert!(
+            r.configuring.contains("roto"),
+            "2 つ目が列に残っている間は configuring のまま"
+        );
+        let second = r.next_setup_job().unwrap();
+        assert_eq!(second.setup, 3);
+        r.finish_setup_job(&second, Ok(()));
+        assert!(
+            !r.configuring.contains("roto"),
+            "列が空になって初めて外れる"
+        );
+        assert!(r.next_setup_job().is_none());
+    }
     #[test]
     fn registering_while_holding_the_lease_switches_now() {
         let dir = tempfile::tempdir().unwrap();
