@@ -84,3 +84,9 @@ END → 読み戻し照合 をやる。実行中は configuring、失敗は conf
 - 2026-10-16: 起草。読み取り（PR #26）の実測を前提に、切り替えと台帳を先に入れる
 - 2026-10-16: 台帳 / SelectSetup / lease 移動での SET SETUP（PR #27）
 - 2026-10-18: 段 C の契約（ApplyDeviceSetup の型、KDL、Rust / Swift SDK、共有 fixture）と、受付時点からの configuring の保証。本体は未実装（not_implemented）
+- 2026-10-18: 段 C の本体（roto_serial の書き込み命令、roto_setup の検査と差分、roto_admin::apply_setup）。控えは `<state_dir>/roto-backup/<unix秒>-setup-NN.json`
+- 2026-10-18: **実機で最初の 1 席を書いた**（mako GO。FW 3.3.0、MIDI モード、setup 6 に名前「VP」+ switch 7「MIC」）。
+  2 op、ポートを開いていたのは 3508 ms / 135 要求（読み 65 + START/END + 2 + 読み戻し 65）、読み戻し一致。
+  SET SETUP は 66 ms。同じ中身の再 apply は 0 op / 1669 ms（読むだけ）。**書いた後に挿し直しは要らない**
+  （トレースで Roto の CC 250 件が VP に届くのを確認。ROTO-SETUP の Import で要った症状は出ない）。
+  所要の目安: 約 1.7 秒 + 27 ms × 差分の席数 + 約 1.7 秒。その間 MIDI が止まる
