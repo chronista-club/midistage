@@ -38,14 +38,22 @@ pub struct Runtime {
     pub config_errors: BTreeMap<String, String>,
 }
 
-/// 機材の setup を選ぶ用事（design 06）
-#[derive(Clone, Debug, PartialEq, Eq)]
+/// 機材の setup にする用事（design 06）
+#[derive(Clone, Debug, PartialEq)]
 pub struct SetupJob {
     pub device_id: String,
     pub client_id: String,
     /// この lease の間だけ有効。lease が移っていたら捨てる
     pub token: String,
     pub setup: u8,
+    pub action: SetupAction,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub enum SetupAction {
+    /// 表に出す setup を選ぶ（SET SETUP）
+    Select,
+    /// setup の中身を書く（段 C。検査済みの席）
+    Apply(crate::roto_setup::Desired),
 }
 
 /// setup を持つ機材（Serial で切り替えられる）
@@ -312,6 +320,38 @@ impl Runtime {
             client_id: client,
             token: request.lease_token.clone(),
             setup: request.setup,
+            action: SetupAction::Select,
+        });
+        Ok(())
+    }
+
+    /// setup の中身を書く（段 C）。lease を持つアプリが、自分の台帳の setup にだけ。
+    /// 中身はここで検査して、壊れていれば受け付けない（列には積まない）
+    pub fn apply_device_setup(
+        &mut self,
+        session: &str,
+        request: &midistage_protocol::wire::ApplyDeviceSetup,
+    ) -> anyhow::Result<()> {
+        self.broker
+            .authorize_output(&request.device_id, session, &request.lease_token)?;
+        let client = self
+            .broker
+            .client_for_session(session)
+            .unwrap_or_default()
+            .to_owned();
+        anyhow::ensure!(
+            self.setup_owners(&request.device_id)
+                .get(&client)
+                .is_some_and(|s| s.contains(&request.setup)),
+            "setup is not registered by this app"
+        );
+        let desired = crate::roto_setup::desired(request.setup, &request.content)?;
+        self.enqueue_setup_job(SetupJob {
+            device_id: request.device_id.clone(),
+            client_id: client,
+            token: request.lease_token.clone(),
+            setup: request.setup,
+            action: SetupAction::Apply(desired),
         });
         Ok(())
     }
@@ -349,6 +389,7 @@ impl Runtime {
                 client_id: client.to_owned(),
                 token: lease.token.clone(),
                 setup,
+                action: SetupAction::Select,
             });
         }
         for job in jobs {
@@ -386,6 +427,16 @@ impl Runtime {
     pub fn finish_setup_job(&mut self, job: &SetupJob, result: Result<(), String>) {
         self.settle_configuring(&job.device_id);
         match result {
+            Ok(()) if matches!(job.action, SetupAction::Apply(_)) => {
+                // 中身を書いただけ。表に出す setup は変わらない
+                self.config_errors.remove(&job.device_id);
+                tracing::info!(
+                    "{}: setup {} written for {}",
+                    job.device_id,
+                    job.setup,
+                    job.client_id
+                );
+            }
             Ok(()) => {
                 self.config_errors.remove(&job.device_id);
                 self.current_setup.insert(job.device_id.clone(), job.setup);
@@ -411,8 +462,13 @@ impl Runtime {
             }
             Err(reason) => {
                 tracing::warn!(
-                    "{}: could not select setup {} for {}: {reason}",
+                    "{}: could not {} setup {} for {}: {reason}",
                     job.device_id,
+                    if matches!(job.action, SetupAction::Apply(_)) {
+                        "write"
+                    } else {
+                        "select"
+                    },
                     job.setup,
                     job.client_id
                 );
@@ -724,7 +780,7 @@ mod setup_tests {
     use super::*;
     use midistage_protocol::{
         PROTOCOL_VERSION, Phase,
-        wire::{SelectSetup, SetDeviceSetups},
+        wire::{ApplyDeviceSetup, SelectSetup, SetDeviceSetups, SetupContent},
     };
 
     fn hello(client: &str) -> Hello {
@@ -967,6 +1023,62 @@ mod setup_tests {
             "列が空になって初めて外れる"
         );
         assert!(r.next_setup_job().is_none());
+    }
+    #[test]
+    fn apply_is_for_the_lease_holder_on_its_own_setup_with_valid_content() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut r = runtime(dir.path());
+        r.hello("l", &hello("ladyland")).unwrap();
+        r.hello("v", &hello("vp")).unwrap();
+        r.set_device_setups("l", &setups("roto", &[2, 3])).unwrap();
+        r.set_device_setups("v", &setups("roto", &[6])).unwrap();
+        let token = take(&mut r, "v", "roto");
+        r.plan_setup_switches();
+        let _ = r.next_setup_job().map(|j| r.finish_setup_job(&j, Ok(())));
+        let apply = |setup, token: &str, content: SetupContent| ApplyDeviceSetup {
+            device_id: "roto".into(),
+            lease_token: token.into(),
+            setup,
+            content,
+        };
+        let ok = SetupContent {
+            name: "VP".into(),
+            ..Default::default()
+        };
+        assert!(
+            r.apply_device_setup("l", &apply(2, &token, ok.clone()))
+                .is_err(),
+            "lease を持たない"
+        );
+        assert!(
+            r.apply_device_setup("v", &apply(3, &token, ok.clone()))
+                .is_err(),
+            "ladyland の setup"
+        );
+        let bad = SetupContent {
+            name: "name too long!".into(),
+            ..Default::default()
+        };
+        assert!(
+            r.apply_device_setup("v", &apply(6, &token, bad)).is_err(),
+            "壊れた中身は受け付けない"
+        );
+        assert!(!r.configuring.contains("roto"), "断ったものは列に積まない");
+        r.apply_device_setup("v", &apply(6, &token, ok)).unwrap();
+        assert!(
+            r.configuring.contains("roto"),
+            "受け付けた瞬間から configuring"
+        );
+        let job = r.next_setup_job().unwrap();
+        assert!(matches!(job.action, SetupAction::Apply(ref d) if d.name == "VP"));
+        r.finish_setup_job(&job, Ok(()));
+        assert!(!r.configuring.contains("roto"));
+        assert_eq!(
+            r.current_setup.get("roto"),
+            Some(&6),
+            "書いても表の setup は変わらない（前に選んだ 6 のまま）"
+        );
+        assert!(!r.config_errors.contains_key("roto"));
     }
     #[test]
     fn registering_while_holding_the_lease_switches_now() {

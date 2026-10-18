@@ -5,9 +5,9 @@
 //! 移植元は Ladyland の `RotoKit/RotoAdmin.swift`（ROTO-SETUP.app の解剖、2026-08-12 実機検証）。
 //!
 //! Roto は「MIDI モード + Serial で setup を焼く」で使う（mako 裁定 2026-10-16、
-//! creo mem_1Cg4TThd7VWzafHywhSsVG）。ここは設定の **読み取り** だけを持つ。
-//! 書き込み（START / END CONFIG UPDATE、SET_*、CLEAR_*、SET MODE、SET SETUP）は、
-//! 読み取りの報告のあとで決める。
+//! creo mem_1Cg4TThd7VWzafHywhSsVG）。読み取り、切り替え（SET SETUP）、setup の中身の書き込み
+//! （START / END CONFIG UPDATE に挟んだ SET SETUP NAME / SET KNOB・SWITCH CONTROL CONFIG / CLEAR CONTROL CONFIG）。
+//! SET MODE / FACTORY RESET / CLEAR MIDI SETUP は持たない。
 //!
 //! 作法:
 //! - コマンド `5A <type> <sub> <長さ:2 BE> <data…>`、応答 `A5 <RC> <data…>`
@@ -91,6 +91,127 @@ pub fn get_switch(setup: u8, control: u8) -> Vec<u8> {
 /// 保存領域は書き換えない — 書き込み（SET_* / CLEAR_*）とは別物（design 06）
 pub fn set_setup(setup: u8) -> Vec<u8> {
     request(MIDI, 0x03, &[setup])
+}
+
+// ---- 書き込み（design 06 の段 C）---------------------------------------------
+// 書き込み系は START CONFIG UPDATE（01 04）〜 END CONFIG UPDATE（01 05）の間でだけ処理される。
+// 応答は RC だけ（データ長 0）。レイアウトは公式仕様 v1.3 の 3.4 / 3.7 / 3.8 / 3.9
+
+/// START CONFIG UPDATE（01 04）
+pub fn start_config_update() -> Vec<u8> {
+    request(GENERAL, 0x04, &[])
+}
+/// END CONFIG UPDATE（01 05）。今選ばれている setup への変更はここで本体に反映される
+pub fn end_config_update() -> Vec<u8> {
+    request(GENERAL, 0x05, &[])
+}
+
+/// 13 バイトの名前欄（NULL 終端の ASCII、00 で埋める）。12 文字に切り、ASCII 以外は `?`
+pub fn name_field(name: &str) -> [u8; NAME_LEN] {
+    let mut out = [0u8; NAME_LEN];
+    for (slot, c) in out.iter_mut().zip(name.chars().take(NAME_LEN - 1)) {
+        *slot = if c.is_ascii() && !c.is_ascii_control() {
+            c as u8
+        } else {
+            b'?'
+        };
+    }
+    out
+}
+
+/// SET SETUP NAME（02 04）
+pub fn set_setup_name(setup: u8, name: &str) -> Vec<u8> {
+    let mut data = vec![setup];
+    data.extend(name_field(name));
+    request(MIDI, 0x04, &data)
+}
+
+fn control_mode_byte(mode: ControlMode) -> u8 {
+    match mode {
+        ControlMode::Cc7 => 0,
+        ControlMode::Cc14 => 1,
+        ControlMode::Nrpn7 => 2,
+        ControlMode::Nrpn14 => 3,
+        ControlMode::ProgramChange => 4,
+        ControlMode::Note => 5,
+        ControlMode::Unknown(b) => b,
+    }
+}
+
+/// 席に共通の前半 `SI CI CM CC CP NA:2 MN:2 MX:2 CN:13 CS`（仕様: NRPN では CP = FF、
+/// NRPN と program_change 以外では NA = 0000）
+fn common_field(c: &Common) -> Vec<u8> {
+    let param = match c.mode {
+        ControlMode::Nrpn7 | ControlMode::Nrpn14 => 0xFF,
+        _ => c.param,
+    };
+    let address = match c.mode {
+        ControlMode::Nrpn7 | ControlMode::Nrpn14 | ControlMode::ProgramChange => c.nrpn_address,
+        _ => 0,
+    };
+    let mut d = vec![
+        c.setup,
+        c.control,
+        control_mode_byte(c.mode),
+        c.channel,
+        param,
+    ];
+    d.extend(address.to_be_bytes());
+    d.extend(c.min.to_be_bytes());
+    d.extend(c.max.to_be_bytes());
+    d.extend(name_field(&c.name));
+    d.push(c.color);
+    d
+}
+
+/// SET KNOB CONTROL CONFIG（02 07）: `… CS HM IP1 IP2 HS SN:HS×13`（HS は段付きのときだけ）
+pub fn set_knob(knob: &Knob) -> Vec<u8> {
+    let mut d = common_field(&knob.common);
+    match &knob.haptics {
+        KnobHaptics::Smooth { indents } => {
+            d.push(0);
+            d.push(indents.first().copied().unwrap_or(0xFF));
+            d.push(indents.get(1).copied().unwrap_or(0xFF));
+            d.push(0);
+        }
+        KnobHaptics::Steps { names } => {
+            d.extend([1, 0xFF, 0xFF, names.len() as u8]);
+            for n in names {
+                d.extend(name_field(n));
+            }
+        }
+        KnobHaptics::CentreIndent => d.extend([2, 0xFF, 0xFF, 0]),
+        KnobHaptics::Unknown { mode } => d.extend([*mode, 0xFF, 0xFF, 0]),
+    }
+    request(MIDI, 0x07, &d)
+}
+
+/// SET SWITCH CONTROL CONFIG（02 08）: `… CS LN LF HM HS SN:HS×13`
+pub fn set_switch(sw: &Switch) -> Vec<u8> {
+    let mut d = common_field(&sw.common);
+    d.push(sw.led_on);
+    d.push(sw.led_off);
+    d.push(match sw.action {
+        SwitchAction::Push => 0,
+        SwitchAction::Toggle => 1,
+        SwitchAction::Unknown(b) => b,
+    });
+    d.push(sw.step_names.len() as u8);
+    for n in &sw.step_names {
+        d.extend(name_field(n));
+    }
+    request(MIDI, 0x08, &d)
+}
+
+/// 席の種類（CLEAR CONTROL CONFIG の CT）
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SeatKind {
+    Knob,
+    Switch,
+}
+/// CLEAR CONTROL CONFIG（02 09）: 席を未設定に戻す `SI CT CI`
+pub fn clear_control(setup: u8, kind: SeatKind, control: u8) -> Vec<u8> {
+    request(MIDI, 0x09, &[setup, kind as u8, control])
 }
 
 // ---- 応答の読み取り ----------------------------------------------------------
@@ -441,6 +562,129 @@ mod tests {
     #[test]
     fn selecting_a_setup_is_one_byte_of_data() {
         assert_eq!(set_setup(6), [0x5A, 0x02, 0x03, 0x00, 0x01, 6]);
+    }
+
+    #[test]
+    fn config_update_brackets_and_name_follow_the_spec() {
+        assert_eq!(start_config_update(), [0x5A, 0x01, 0x04, 0x00, 0x00]);
+        assert_eq!(end_config_update(), [0x5A, 0x01, 0x05, 0x00, 0x00]);
+        let m = set_setup_name(6, "VP");
+        assert_eq!(&m[..6], &[0x5A, 0x02, 0x04, 0x00, 0x0E, 6]);
+        assert_eq!(&m[6..], &padded("VP")[..]);
+        // 12 文字に切って NULL 終端が必ず入る。ASCII 以外は ?
+        let n = name_field("ABCDEFGHIJKLMNOP");
+        assert_eq!(&n[..12], b"ABCDEFGHIJKL");
+        assert_eq!(n[12], 0);
+        assert_eq!(&name_field("ラ1")[..3], b"?1\0");
+    }
+
+    /// 書いたものを読むと同じになる（SET のレイアウト = GET の応答のレイアウト）
+    #[test]
+    fn a_knob_round_trips_through_set_and_get() {
+        for haptics in [
+            KnobHaptics::Smooth {
+                indents: vec![0x40],
+            },
+            KnobHaptics::Smooth { indents: vec![] },
+            KnobHaptics::Steps {
+                names: vec!["SAW".into(), "SQR".into(), "TRI".into()],
+            },
+            KnobHaptics::CentreIndent,
+        ] {
+            let knob = Knob {
+                common: Common {
+                    setup: 6,
+                    control: 3,
+                    mode: ControlMode::Cc14,
+                    channel: 3,
+                    param: 21,
+                    nrpn_address: 0,
+                    min: 0,
+                    max: 16383,
+                    name: "Mode".into(),
+                    color: 5,
+                },
+                haptics: haptics.clone(),
+            };
+            let msg = set_knob(&knob);
+            let steps = match &haptics {
+                KnobHaptics::Steps { names } => names.len(),
+                _ => 0,
+            };
+            // CL = 1D + HS × 0D
+            assert_eq!(
+                be16(&msg[3..5]) as usize,
+                0x1D + steps * NAME_LEN,
+                "{haptics:?}"
+            );
+            assert_eq!(msg.len(), 5 + 0x1D + steps * NAME_LEN);
+            // GET の応答は段名が 16 本ぶん来るので、足りない分を 00 で埋めて読む
+            let mut reply = msg[5..].to_vec();
+            reply.resize(reply_len::KNOB, 0);
+            assert_eq!(Knob::parse(&reply).unwrap(), knob, "{haptics:?}");
+        }
+    }
+
+    #[test]
+    fn nrpn_knob_sends_ff_param_and_the_address() {
+        let knob = Knob {
+            common: Common {
+                setup: 6,
+                control: 0,
+                mode: ControlMode::Nrpn14,
+                channel: 3,
+                param: 99, // 無視され FF になる
+                nrpn_address: 0x0102,
+                min: 0,
+                max: 16383,
+                name: "Pan".into(),
+                color: 30,
+            },
+            haptics: KnobHaptics::CentreIndent,
+        };
+        let msg = set_knob(&knob);
+        assert_eq!(msg[5 + 4], 0xFF, "CP");
+        assert_eq!(&msg[5 + 5..5 + 7], &[0x01, 0x02], "NA");
+        // CC ではアドレス欄は 0000
+        let mut cc = knob.clone();
+        cc.common.mode = ControlMode::Cc7;
+        cc.common.nrpn_address = 0x0102;
+        assert_eq!(&set_knob(&cc)[5 + 5..5 + 7], &[0, 0]);
+    }
+
+    #[test]
+    fn a_switch_round_trips_and_clear_names_the_seat_kind() {
+        let sw = Switch {
+            common: Common {
+                setup: 6,
+                control: 7,
+                mode: ControlMode::Cc7,
+                channel: 3,
+                param: 27,
+                nrpn_address: 0,
+                min: 0,
+                max: 127,
+                name: "TALK".into(),
+                color: 2,
+            },
+            led_on: 2,
+            led_off: 70,
+            action: SwitchAction::Push,
+            step_names: vec![],
+        };
+        let msg = set_switch(&sw);
+        assert_eq!(&msg[..5], &[0x5A, 0x02, 0x08, 0x00, 0x1D]);
+        let mut reply = msg[5..].to_vec();
+        reply.resize(reply_len::SWITCH, 0);
+        assert_eq!(Switch::parse(&reply).unwrap(), sw);
+        assert_eq!(
+            clear_control(6, SeatKind::Knob, 3),
+            [0x5A, 0x02, 0x09, 0x00, 0x03, 6, 0, 3]
+        );
+        assert_eq!(
+            clear_control(6, SeatKind::Switch, 7),
+            [0x5A, 0x02, 0x09, 0x00, 0x03, 6, 1, 7]
+        );
     }
 
     #[test]

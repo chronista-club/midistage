@@ -11,4 +11,5 @@ pub mod flow;
 pub mod logging;
 pub mod paths;
 pub mod roto_admin;
+pub mod roto_setup;
 pub mod trace;

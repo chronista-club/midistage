@@ -184,6 +184,7 @@ async fn main() -> anyhow::Result<()> {
             {
                 let setups = service.runtime.clone();
                 let setups_running = running.clone();
+                let setups_backup_dir = directory.join("roto-backup");
                 std::thread::Builder::new()
                     .name("device-setups".into())
                     .spawn(move || {
@@ -194,8 +195,26 @@ async fn main() -> anyhow::Result<()> {
                                 r.next_setup_job()
                             };
                             if let Some(job) = job {
-                                let result = midistaged::roto_admin::select_setup(job.setup)
-                                    .map_err(|e| e.to_string());
+                                let result = match &job.action {
+                                    midistaged::runtime::SetupAction::Select => {
+                                        midistaged::roto_admin::select_setup(job.setup)
+                                    }
+                                    midistaged::runtime::SetupAction::Apply(desired) => {
+                                        midistaged::roto_admin::apply_setup(
+                                            job.setup,
+                                            desired,
+                                            &setups_backup_dir,
+                                        )
+                                        .map(|a| {
+                                            // Serial を開いている間 MIDI が止まる。所要を残す（間引きの設計に使う）
+                                            tracing::info!(
+                                                "{}: setup {} written: {} op(s), port open {} ms, {} requests, backup {}",
+                                                job.device_id, job.setup, a.ops, a.port_open_ms, a.requests, a.backup.display()
+                                            );
+                                        })
+                                    }
+                                }
+                                .map_err(|e| e.to_string());
                                 setups
                                     .lock()
                                     .expect("runtime mutex poisoned")
