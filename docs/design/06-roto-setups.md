@@ -29,12 +29,14 @@ ROTO-CONTROL を VP と Ladyland で切り替えながら使う（mako 2026-10-1
 ### 台帳: setup の持ち主は midistage が持つ
 
 Roto 本体には「この setup は誰のもの」を書く場所が無い。名前で判断せず、midistage が `settings.json` に持つ。
+番号は **内部 index（0 始まり）**。Roto の画面の「SETUP NN」は 1 始まりなので 1 ずれる（index 8 = 画面の SETUP 09）。
+VP の席は index 8（mako 裁定 2026-10-18。最初の実機確認で使った 6 は控えから空に戻した）。
 
 ```json
 "device_setups": {
   "roto": {
     "ladyland": { "setups": [0, 1, 2, 3], "last": 2 },
-    "vp":       { "setups": [6],          "last": null }
+    "vp":       { "setups": [8],          "last": null }
   }
 }
 ```
@@ -77,7 +79,7 @@ Roto 本体には「この setup は誰のもの」を書く場所が無い。�
 lease 保持者だけ、自分の台帳の setup にだけ。サービスが 全 64 席の backup（roto-dump と同じ JSON、
 `~/Library/Application Support/Midistage/roto-backup/<日時>.json`）→ START CONFIG UPDATE → 差分だけ SET / CLEAR →
 END → 読み戻し照合 をやる。実行中は configuring、失敗は config_error と warn。1 回の所要秒を実測して記録する
-（Serial を開いている間 MIDI が止まる）。実機の最初の 1 回は VP の 1 席（6）だけ、mako の GO で。
+（Serial を開いている間 MIDI が止まる）。実機の最初の 1 回は VP の 1 席だけ、mako の GO で（6 で実施 → 裁定で VP の席は 8 に。6 は控えから空に戻した）。
 
 ## Status log
 
@@ -90,3 +92,5 @@ END → 読み戻し照合 をやる。実行中は configuring、失敗は conf
   SET SETUP は 66 ms。同じ中身の再 apply は 0 op / 1669 ms（読むだけ）。**書いた後に挿し直しは要らない**
   （トレースで Roto の CC 250 件が VP に届くのを確認。ROTO-SETUP の Import で要った症状は出ない）。
   所要の目安: 約 1.7 秒 + 27 ms × 差分の席数 + 約 1.7 秒。その間 MIDI が止まる
+- 2026-10-18: mako 裁定で VP の席は index 8（画面の SETUP 09）に。6 は控え（工場出荷の「SETUP 07」、席なし）から戻した
+  （2 op、3171 ms、読み戻し一致）。8 は空（「SETUP 09」、席なし）

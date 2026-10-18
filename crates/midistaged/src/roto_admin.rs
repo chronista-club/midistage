@@ -125,7 +125,7 @@ impl SetupDump {
 }
 
 #[cfg(target_os = "macos")]
-pub use port::{Applied, apply_setup, list_serial_ports, read_all, select_setup, with_port};
+pub use port::{Applied, Session, apply_setup, list_serial_ports, read_all, select_setup, with_port};
 
 #[cfg(target_os = "macos")]
 mod port {
