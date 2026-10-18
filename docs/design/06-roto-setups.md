@@ -84,3 +84,4 @@ END → 読み戻し照合 をやる。実行中は configuring、失敗は conf
 - 2026-10-16: 起草。読み取り（PR #26）の実測を前提に、切り替えと台帳を先に入れる
 - 2026-10-16: 台帳 / SelectSetup / lease 移動での SET SETUP（PR #27）
 - 2026-10-18: 段 C の契約（ApplyDeviceSetup の型、KDL、Rust / Swift SDK、共有 fixture）と、受付時点からの configuring の保証。本体は未実装（not_implemented）
+- 2026-10-18: 段 C の本体（roto_serial の書き込み命令、roto_setup の検査と差分、roto_admin::apply_setup）。実機への書き込みは未実施（最初の 1 席は mako の GO 待ち）。控えは `<state_dir>/roto-backup/<unix秒>-setup-NN.json`
