@@ -14,6 +14,9 @@ async fn main() -> anyhow::Result<()> {
     );
     let mut broker = Broker::new(uuid::Uuid::new_v4().to_string());
     broker.add_device("nano", "nanokontrol", true);
+    // ROTO の偽物（design 06）。setup の用事は Serial を開かずに成功したことにする —
+    // SetDeviceSetups / SelectSetup / 引き継ぎでの切り替えを、SDK から loopback で確かめるため
+    broker.add_device("roto", "roto", true);
     let service = Service::start(Runtime::new(broker, SettingsStore::new(&directory))?).await?;
     atomic_write(
         &directory,
@@ -26,7 +29,13 @@ async fn main() -> anyhow::Result<()> {
             _ = tokio::signal::ctrl_c() => break,
             _ = ticker.tick() => {
                 let mut runtime = service.runtime.lock().unwrap();
-                if runtime.broker.is_quiescent("nano") { runtime.broker.drained("nano")?; }
+                for id in ["nano", "roto"] {
+                    if runtime.broker.is_quiescent(id) { runtime.broker.drained(id)?; }
+                }
+                runtime.plan_setup_switches();
+                if let Some(job) = runtime.next_setup_job() {
+                    runtime.finish_setup_job(&job, Ok(()));
+                }
             }
         }
     }

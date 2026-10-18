@@ -3,6 +3,9 @@
 // 2026-10-11: `service { version, executable }` を追加（省略可。design 05「常駐と配布」）。
 // 2026-10-16: SetDeviceSetups / SelectSetup と、device の `configuring` / `current_setup` /
 //   `setup_owners` / `config_error`（省略可）を追加（design 06「ROTO の setup を持ち主に合わせて切り替える」）。
+// 2026-10-18: ApplyDeviceSetup を追加（design 06 の段 C。`content` の形は wire.rs の SetupContent =
+//   clients/swift/Tests/MidistageClientTests/Fixtures/apply-device-setup.json が正）。本体ができるまで
+//   `not_implemented` を返す。
 protocol "midistage" version="1.0.0" {
     namespace "club.chronista.midistage"
     channel "midistage" from="client" lifetime="persistent" {
@@ -46,6 +49,18 @@ protocol "midistage" version="1.0.0" {
             field "device_id" type="string" required=#true
             field "lease_token" type="string" required=#true
             field "setup" type="int" required=#true
+            returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
+        }
+        request "ApplyDeviceSetup" {
+            field "device_id" type="string" required=#true
+            field "lease_token" type="string" required=#true
+            field "setup" type="int" required=#true
+            // { name, knobs: [KnobConfig], switches: [SwitchConfig] }。載っていない席は未設定にする。
+            // KnobConfig = { control, mode: cc7|cc14|nrpn7|nrpn14, channel 1-16, param, nrpn_address, min, max,
+            //   name (ASCII 12), color 0-82, haptics: {kind: smooth, indents:[0-127]} | {kind: steps, names:[2-16]} | {kind: centre_indent} }
+            // SwitchConfig = { control, mode: +program_change|note, channel, param, nrpn_address, min (OFF 値), max (ON 値),
+            //   name, color, led_on, led_off, action: push|toggle, step_names }
+            field "content" type="json" required=#true
             returns "Reply" { field "snapshot" type="json"; field "error" type="json"; }
         }
         request "Present" {

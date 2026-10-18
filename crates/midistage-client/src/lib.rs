@@ -75,6 +75,20 @@ impl Client {
     pub async fn snapshot(&self) -> anyhow::Result<Snapshot> {
         self.request("Snapshot", &serde_json::json!({})).await
     }
+    /// 自分の setup（Roto 本体の保存枠 0–63）を登録する。空で取り消し（design 06）
+    pub async fn set_device_setups(&self, request: &SetDeviceSetups) -> anyhow::Result<Snapshot> {
+        self.request("SetDeviceSetups", request).await
+    }
+    /// lease を持つ間、自分の setup の中で切り替える。受け付けた時点から snapshot の `configuring` が true、
+    /// false に戻って `config_error` が無ければ完了
+    pub async fn select_setup(&self, request: &SelectSetup) -> anyhow::Result<Snapshot> {
+        self.request("SelectSetup", request).await
+    }
+    /// setup の中身をまるごと書く（design 06 の段 C）。完了の見方は `select_setup` と同じ。
+    /// 本体ができるまでは `not_implemented`
+    pub async fn apply_device_setup(&self, request: &ApplyDeviceSetup) -> anyhow::Result<Snapshot> {
+        self.request("ApplyDeviceSetup", request).await
+    }
     /// アプリが入力停止・発音整理・出力キュー停止を終えてから明示的に呼ぶ。
     pub async fn quiesced(&self, request: &Quiesced) -> anyhow::Result<Snapshot> {
         self.request("Quiesced", request).await

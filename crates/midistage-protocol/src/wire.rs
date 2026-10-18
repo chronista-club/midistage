@@ -81,6 +81,114 @@ pub struct SelectSetup {
     pub setup: u8,
 }
 
+/// setup の中身をまるごと書く（design 06 の段 C）。lease を持つアプリが、自分の台帳の setup にだけ。
+/// サービスが 全席の backup → START → 差分だけ SET / CLEAR → END → 読み戻し照合 をやる。
+/// 実行中は `configuring`、失敗は `config_error`。応答は受け付けた時点で返る
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ApplyDeviceSetup {
+    pub device_id: String,
+    pub lease_token: String,
+    pub setup: u8,
+    pub content: SetupContent,
+}
+
+/// setup 1 つの中身。載っていない席は未設定（CLEAR）にする
+#[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
+pub struct SetupContent {
+    /// 12 文字までの ASCII（本体の画面に出る）
+    pub name: String,
+    #[serde(default)]
+    pub knobs: Vec<KnobConfig>,
+    #[serde(default)]
+    pub switches: Vec<SwitchConfig>,
+}
+
+/// 送る MIDI の種類。つまみは cc7 / cc14 / nrpn7 / nrpn14、ボタンはそれに program_change / note も
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ControlMode {
+    Cc7,
+    Cc14,
+    Nrpn7,
+    Nrpn14,
+    ProgramChange,
+    Note,
+}
+
+/// つまみ 1 席（control 00–1F = 8 × 4 ページ）
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct KnobConfig {
+    pub control: u8,
+    pub mode: ControlMode,
+    /// 1–16
+    pub channel: u8,
+    /// CC 番号（NRPN では未使用）
+    #[serde(default)]
+    pub param: u8,
+    #[serde(default)]
+    pub nrpn_address: u16,
+    #[serde(default)]
+    pub min: u16,
+    /// 7bit なら 127 まで、14bit なら 16383 まで
+    pub max: u16,
+    /// 12 文字までの ASCII
+    pub name: String,
+    /// 色（0–82 の固定パレット。midistage-profiles の roto_palette）
+    pub color: u8,
+    pub haptics: KnobHaptics,
+}
+
+/// つまみの手応え
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case", tag = "kind")]
+pub enum KnobHaptics {
+    /// 300 度のなめらかな回転。クリック位置（0–127）を 2 つまで
+    Smooth {
+        #[serde(default)]
+        indents: Vec<u8>,
+    },
+    /// 2–16 段のクリック。段ごとの名前（12 文字まで。段の数 = 名前の数）
+    Steps { names: Vec<String> },
+    /// 300 度 + 中央のクリック
+    CentreIndent,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SwitchAction {
+    /// 押している間だけ ON
+    Push,
+    /// 押すたびに ON / OFF
+    Toggle,
+}
+
+/// ボタン 1 席（control 00–1F）
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct SwitchConfig {
+    pub control: u8,
+    pub mode: ControlMode,
+    pub channel: u8,
+    /// CC 番号 / Program 番号 / Note
+    #[serde(default)]
+    pub param: u8,
+    /// NRPN のアドレス。program_change では bank（使わなければ 0xFFFF）
+    #[serde(default)]
+    pub nrpn_address: u16,
+    /// OFF のとき送る値
+    #[serde(default)]
+    pub min: u16,
+    /// ON のとき送る値
+    pub max: u16,
+    pub name: String,
+    pub color: u8,
+    pub led_on: u8,
+    pub led_off: u8,
+    pub action: SwitchAction,
+    /// 段のあるボタンの段名（2–16。無ければ空）
+    #[serde(default)]
+    pub step_names: Vec<String>,
+}
+
 /// サービス自身の事実（design 05「常駐と配布」）。app が「同梱版が動いているか」「.app を更新したが
 /// 古い版のままか」を表示するために使う。入れ替えは人の操作なので、ここは事実を載せるだけ。
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq)]
@@ -175,6 +283,94 @@ pub struct Endpoint {
 mod tests {
     use super::*;
     use crate::{Assignment, Lease, Phase};
+
+    /// ApplyDeviceSetup の形。Swift SDK（Fixtures/apply-device-setup.json）と VP が同じものを読む。
+    /// `UPDATE_FIXTURE=1 cargo test -p midistage-protocol` で書き直す
+    #[test]
+    fn apply_device_setup_matches_the_shared_fixture() {
+        let request = ApplyDeviceSetup {
+            device_id: "roto".into(),
+            lease_token: "boot:4".into(),
+            setup: 6,
+            content: SetupContent {
+                name: "VP".into(),
+                knobs: vec![
+                    KnobConfig {
+                        control: 0,
+                        mode: ControlMode::Cc7,
+                        channel: 3,
+                        param: 20,
+                        nrpn_address: 0,
+                        min: 0,
+                        max: 127,
+                        name: "Lane 1".into(),
+                        color: 12,
+                        haptics: KnobHaptics::Smooth { indents: vec![64] },
+                    },
+                    KnobConfig {
+                        control: 1,
+                        mode: ControlMode::Cc14,
+                        channel: 3,
+                        param: 21,
+                        nrpn_address: 0,
+                        min: 0,
+                        max: 16383,
+                        name: "Mode".into(),
+                        color: 5,
+                        haptics: KnobHaptics::Steps {
+                            names: vec!["PIN".into(), "LANE".into(), "FLOW".into()],
+                        },
+                    },
+                    KnobConfig {
+                        control: 2,
+                        mode: ControlMode::Nrpn14,
+                        channel: 3,
+                        param: 0,
+                        nrpn_address: 0x0102,
+                        min: 0,
+                        max: 16383,
+                        name: "Pan".into(),
+                        color: 30,
+                        haptics: KnobHaptics::CentreIndent,
+                    },
+                ],
+                switches: vec![SwitchConfig {
+                    control: 7,
+                    mode: ControlMode::Cc7,
+                    channel: 3,
+                    param: 27,
+                    nrpn_address: 0,
+                    min: 0,
+                    max: 127,
+                    name: "TALK".into(),
+                    color: 2,
+                    led_on: 2,
+                    led_off: 70,
+                    action: SwitchAction::Push,
+                    step_names: vec![],
+                }],
+            },
+        };
+        let got = serde_json::to_string_pretty(&request).unwrap() + "\n";
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(
+            "../../clients/swift/Tests/MidistageClientTests/Fixtures/apply-device-setup.json",
+        );
+        if std::env::var_os("UPDATE_FIXTURE").is_some() {
+            std::fs::write(&path, &got).unwrap();
+        }
+        assert_eq!(got, std::fs::read_to_string(&path).unwrap());
+        let back: ApplyDeviceSetup = serde_json::from_str(&got).unwrap();
+        assert_eq!(back, request);
+        // 省略できる欄（param / nrpn_address / min / indents / step_names）は無くても読める
+        let minimal: ApplyDeviceSetup = serde_json::from_str(
+            r#"{"device_id":"roto","lease_token":"t","setup":6,"content":{"name":"VP",
+                "switches":[{"control":7,"mode":"cc7","channel":3,"param":27,"max":127,"name":"TALK",
+                "color":2,"led_on":2,"led_off":70,"action":"push"}]}}"#,
+        )
+        .unwrap();
+        assert_eq!(minimal.content.knobs.len(), 0);
+        assert_eq!(minimal.content.switches[0].min, 0);
+    }
 
     /// design 06 の欄を含む snapshot。Swift SDK（clients/swift/Tests/.../snapshot-setups.json）が同じものを読む。
     /// 形を意図して変えたら `UPDATE_FIXTURE=1 cargo test -p midistage-protocol` で書き直し、Swift のテストも通す

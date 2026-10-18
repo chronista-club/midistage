@@ -58,6 +58,12 @@ Roto 本体には「この setup は誰のもの」を書く場所が無い。�
 
 - request `SetDeviceSetups { device_id, setups: [int] }`
 - request `SelectSetup { device_id, lease_token, setup: int }`
+- request `ApplyDeviceSetup { device_id, lease_token, setup: int, content: SetupContent }`（段 C。`content` の形は
+  `wire.rs` の `SetupContent` = `clients/swift/Tests/MidistageClientTests/Fixtures/apply-device-setup.json` が正。
+  載っていない席は CLEAR。本体ができるまで `not_implemented`）
+- **完了の見方**（SelectSetup / ApplyDeviceSetup 共通）: 応答は受け付けた時点で返る。**受け付けた瞬間から**
+  snapshot の `configuring` が true（列で待つ間も）。false に戻って `config_error` が無ければ完了、あれば失敗。
+  速く終わっても busy を取り落とさないよう、受付の応答の snapshot 自体が `configuring=true` を含む
 - `DeviceView` に省略可の欄: `configuring: bool`、`current_setup: int?`（midistage が最後に選んだもの。本体の SEL で変えられると知らない）、`setup_owners: { client_id: [int] }`、`config_error: string?`
 
 ## 気をつけること
@@ -66,6 +72,15 @@ Roto 本体には「この setup は誰のもの」を書く場所が無い。�
 - Roto をまだ DAW モード（MIX / PLUGIN）で使うアプリがあると、setup の切り替えだけでは足りない（SET MODE が要る）。今回は MIDI モードだけを扱う
 - **書き込み（setup の中身を焼く）はこの段に入れない**。1 席で実機の反映と後遺症を確かめてから足す
 
+## 段 C: 書き込み（ApplyDeviceSetup）
+
+lease 保持者だけ、自分の台帳の setup にだけ。サービスが 全 64 席の backup（roto-dump と同じ JSON、
+`~/Library/Application Support/Midistage/roto-backup/<日時>.json`）→ START CONFIG UPDATE → 差分だけ SET / CLEAR →
+END → 読み戻し照合 をやる。実行中は configuring、失敗は config_error と warn。1 回の所要秒を実測して記録する
+（Serial を開いている間 MIDI が止まる）。実機の最初の 1 回は VP の 1 席（6）だけ、mako の GO で。
+
 ## Status log
 
 - 2026-10-16: 起草。読み取り（PR #26）の実測を前提に、切り替えと台帳を先に入れる
+- 2026-10-16: 台帳 / SelectSetup / lease 移動での SET SETUP（PR #27）
+- 2026-10-18: 段 C の契約（ApplyDeviceSetup の型、KDL、Rust / Swift SDK、共有 fixture）と、受付時点からの configuring の保証。本体は未実装（not_implemented）

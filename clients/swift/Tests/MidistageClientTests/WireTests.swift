@@ -118,3 +118,21 @@ import Testing
     let snapshot = try JSONDecoder().decode(Snapshot.self, from: Data(contentsOf: url))
     #expect(snapshot.devices[0].configuring == nil && snapshot.devices[0].setupOwners == nil)
 }
+
+/// design 06 の段 C: Rust が書く fixture（apply_device_setup_matches_the_shared_fixture）と同じ形を読み、同じ JSON に戻せる
+@Test func applyDeviceSetupRoundTripsTheSharedFixture() throws {
+    let url = Bundle.module.url(forResource: "apply-device-setup", withExtension: "json", subdirectory: "Fixtures")!
+    let data = try Data(contentsOf: url)
+    struct Envelope: Codable, Equatable { var deviceID: String; var leaseToken: String; var setup: Int; var content: SetupContent
+        enum CodingKeys: String, CodingKey { case deviceID = "device_id", leaseToken = "lease_token", setup, content } }
+    let request = try JSONDecoder().decode(Envelope.self, from: data)
+    #expect(request.setup == 6 && request.content.name == "VP")
+    #expect(request.content.knobs.count == 3 && request.content.switches.count == 1)
+    #expect(request.content.knobs[0].haptics == .smooth(indents: [64]))
+    #expect(request.content.knobs[1].haptics == .steps(names: ["PIN", "LANE", "FLOW"]))
+    #expect(request.content.knobs[2].haptics == .centreIndent && request.content.knobs[2].mode == .nrpn14)
+    #expect(request.content.switches[0].action == .push && request.content.switches[0].ledOff == 70)
+    // 書いて読み直しても同じ（Swift 側の encode が Rust の形と一致）
+    let again = try JSONDecoder().decode(Envelope.self, from: JSONEncoder().encode(request))
+    #expect(again == request)
+}
