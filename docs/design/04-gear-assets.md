@@ -129,3 +129,4 @@ Ladyland の机・棚の Blender シーン（studio.blend）は機材を**リン
 - 2026-10-12 gear.json に `maker` / `model` を必須に（`model` にメーカー名を重ねない。`gear/tests` で検査）。app の一覧が「メーカー + 機材名」を出す正本（spec 01 REQ-APP-001a）
 - 2026-10-14 生成器を移設（Ladyland の gear_build.py / nanokontrol.py → generate.py / nanokontrol_build.py）。移設時の 8 台は生成し直すと部品名・外形とも差ゼロ。l6max / zenith2 は端子の穴など手で足した部品があり、生成器はその土台を作る
 - 2026-10-14 全高の磨き（§7）。keystage / minilab / fgdp を仕様値へ。numa は実測待ち
+- 2026-10-17 生成器に `jack` / `port` 部品を追加（Ladyland の l6max 作業 worktree に未コミットで残っていた分）。l6max / zenith2 も生成し直して部品名・外形とも差ゼロになった

@@ -25,7 +25,7 @@ JSON（単位 mm、座標はアプリと同じ: 機材の中心が原点、x = �
     }
 
 部品の種類: knob / encoder / fader / button / pad / key_white / key_black / display /
-wheel / grille / led / decor。可動部は名前で掴む（アプリが動かす）ので、名前は JSON のまま。
+wheel / grille / jack / port / led / decor。可動部は名前で掴む（アプリが動かす）ので、名前は JSON のまま。
 
 使い方（**既存の .blend には上書きしない** — 手で磨いた見た目を消さないため）:
     Blender --background --python gear/generate.py -- <id> --output /tmp/<id>.blend
@@ -211,6 +211,18 @@ def build(spec):
             ob = box(coll, name, (pw, pd, ph), loc, mat, root, bevel_mm=0.4)
         elif kind == "wheel":
             ob = wheel(coll, name, pd / 2, pw, (x, -z, y0 + ph - pd / 2), mat, root)
+        elif kind == "jack":  # 丸いジャック: ナットの輪 + 暗い穴（L6max の XLR コンボ / TS / 3.5mm）
+            ob = cylinder(coll, name, pw / 2, ph, loc, mat, root, taper=1.0, bevel_mm=0.3)
+            cylinder(coll, f"{name}_hole", pw * 0.3, ph + 0.4, (0, 0, 0.1), groove, ob, 1.0, 0.1)
+        elif kind == "port":  # 側面の丸い端子（ヘッドホン / コンボ / TRS / DIN）: 面から突き出る横向き円筒 + 暗い穴
+            # size = [直径, 突き出し, 直径]。"face": "front" / "rear" / "right" / "left" で向きが決まる
+            face = part.get("face", "front")
+            ob = cylinder(coll, name, pw / 2, pd, loc, mat, root, taper=1.0, bevel_mm=0.3)
+            if not part.get("solid"):  # 穴なし = 面付きの丸ボタン
+                cylinder(coll, f"{name}_hole", pw * 0.3, pd + 0.4, (0, 0, 0.1), groove, ob, 1.0, 0.1)
+            import math as _m
+            ob.rotation_euler = {"front": (_m.pi / 2, 0, 0), "rear": (-_m.pi / 2, 0, 0),
+                                 "right": (0, _m.pi / 2, 0), "left": (0, -_m.pi / 2, 0)}[face]
         elif kind == "grille":
             ob = box(coll, name, (pw, pd, ph), loc, mat, root, bevel_mm=min(2.0, pd * 0.2))
         else:  # button / led / decor
