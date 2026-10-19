@@ -94,6 +94,15 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 - 送信 API が戻った時点の意味（上記）
 - KORG USB-MIDI Driver を入れた機材が、`midisrv` からどう見えるか（Zenith 2 は `MIDIU_KSA_…` の経路だった）
 - Windows のアプリ向けの SDK（Rust SDK は使える。Swift SDK は macOS 専用。C# などは需要が出てから）
+- `Windows.Devices.Midi2.dll` を同梱するか（下の spike 参照）。同梱には Microsoft の go-live 条件が付く
+
+## spike: Rust から Windows.Devices.Midi2（2026-10-19）
+
+- API は `Windows.Devices.Midi2`。2026-10-12 の In-box Preview 11 で metadata が凍結され、将来は Windows に入る。このマシン（26200）にはまだ無い（`MidiApi::IsSystemProvided() = false`）
+- NuGet パッケージ `Windows.Devices.Midi2 0.99.92-preview.11`（MIT、GitHub Releases のみ。nuget.org には無い）の winmd（415 KB）から `windows-bindgen 0.62` で binding を作り、`Windows.Devices.Midi2.dll`（6.9 MB）と `.pri` を exe の隣に置けば動く。SDK Runtime / Tools のインストーラー（管理者）は要らない。OS に入った後は OS 側が優先される
+- windows-bindgen（0.62・0.100 とも）は `[NoException]` の static メソッドを、`Result` を期待する factory の closure の中で素の値を返す形に生成し、コンパイルが通らない（349 箇所）。生成後に `Ok(..)` で包む置換で回避した。0.100 の生成物は `windows-core 0.100` とも合わない
+- 列挙の結果（何も開かず、何も送らない）: endpoint は双方向で 1 機材 1 つ。`GetParentDeviceInformation()` から USB の VID / PID / シリアルが取れる（nanoKONTROL2 は `0944:0117`、シリアル無し。Zenith 2 は `23E5:A2F4`、シリアル有り）。`SupportsMultiClient = true`、transport は nanoKONTROL2 が `KS`（usbmidi2）、Zenith 2 が `KSA`（ベンダードライバ）
+- go-live 条件（Preview 11 のリリースノート）: Windows 11 25H2 以上にだけ配る、API が Windows に入ったら同梱を外す更新を出す、preview API を使っていることを利用者に伝える、新しい preview に追従する、など
 - 配布の形（MSIX か、署名付きの exe と installer か）と、自動アップデート（macOS の Sparkle 2 に相当するもの）
 
 ## Status log
