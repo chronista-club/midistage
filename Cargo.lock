@@ -1247,6 +1247,9 @@ dependencies = [
  "tracing-appender",
  "tracing-subscriber",
  "uuid",
+ "windows",
+ "windows-collections",
+ "windows-core",
 ]
 
 [[package]]

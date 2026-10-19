@@ -134,11 +134,18 @@ async fn main() -> anyhow::Result<()> {
             }
         }
         Command::ListPorts => {
-            // 空の一覧を成功として返さない
-            #[cfg(not(target_os = "macos"))]
-            anyhow::bail!("list-ports has no MIDI backend on this OS yet (design 07)");
             #[cfg(target_os = "macos")]
-            for (id, device) in midistaged::native::discover() {
+            let devices = midistaged::native::discover();
+            // Windows MIDI Services（design 07）。API が使えなければ理由を返して失敗する
+            #[cfg(windows)]
+            let devices = midistaged::winmidi::discover()?;
+            // 空の一覧を成功として返さない
+            #[cfg(not(any(target_os = "macos", windows)))]
+            let devices: std::collections::BTreeMap<
+                String,
+                midistaged::inventory::DevicePorts,
+            > = anyhow::bail!("list-ports has no MIDI backend on this OS yet (design 07)");
+            for (id, device) in devices {
                 if let Some(error) = device.error {
                     println!("{id}: {error}");
                 }

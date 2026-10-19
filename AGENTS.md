@@ -43,6 +43,7 @@ apps/menubar/    # メニューバー app（MenuModel = 純粋層 + MidistageApp
 gear/                  # 機材の 3D 資産（gear.json + .blend、build.py / check.py）
 schemas/               # 通信の契約（KDL）
 scripts/build-app.sh   # midistage.app の組立・署名・公証・配布
+tools/winmidi-bindgen/ # Windows.Devices.Midi2 の binding 生成（workspace の外。design 07）
 ```
 
 wire 型を変えるときは `schemas/midistage.kdl`、`midistage-protocol`、Swift SDK、共通 fixture を同じ PR で更新する。
@@ -58,6 +59,8 @@ scripts/test-sdk-interop.sh                 # Swift SDK と Rust サービスの
 (cd apps/menubar && swift test)       # メニューバー app の純粋層（MenuModel）
 scripts/build-app.sh [--install|--run]      # midistage.app を組む（midistaged 同梱、ad-hoc 署名）
 cargo run -p midistaged -- list-ports       # 物理ポートの列挙（何も開かず、何も送らない）
+scripts/winmidi.sh fetch                    # Windows: Windows.Devices.Midi2 の dll / winmd を取る（design 07）
+scripts/winmidi.sh bindings                 # Windows: winmidi_bindings.rs を作り直す（使う型を足したとき）
 cargo run -p midistaged -- serve            # サービス起動
 ```
 

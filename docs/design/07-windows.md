@@ -31,9 +31,19 @@ OS が解いたのは「開ける・壊れない」まで。要求の順番待�
 
 ### MIDI の I/O は Windows MIDI Services の SDK で書く
 
-`native_midi` 拡張には、lease ごとにアプリ専用の仮想 source / destination が要る（design 03）。WinMM には仮想ポートを作る API が無いので、仮想 endpoint を作れる Windows MIDI Services の App SDK（WinRT、`Microsoft.Windows.Devices.Midi2`）を使う。UMP がそのまま通るので、`midistage-core` の UMP 型とも合う。
+`native_midi` 拡張には、lease ごとにアプリ専用の仮想 source / destination が要る（design 03）。WinMM には仮想ポートを作る API が無いので、仮想 endpoint を作れる Windows MIDI Services の API（WinRT、`Windows.Devices.Midi2`）を使う。UMP がそのまま通るので、`midistage-core` の UMP 型とも合う。`windows` crate に入っている `Windows.Devices.Midi` は旧来の MIDI 1.0 用 API で、仮想 endpoint を作れないので使わない。
 
-Rust からは、SDK の winmd から `windows-bindgen` で binding を作る見込み。`windows` crate に入っている `Windows.Devices.Midi` は旧来の MIDI 1.0 用 API で、仮想 endpoint を作れないので使わない。
+### `Windows.Devices.Midi2.dll` を同梱する（mako 裁定 2026-10-19）
+
+API が Windows に入るまでは、NuGet パッケージの dll と pri を midistaged.exe の隣に置く。Microsoft の go-live 条件（下の spike）を受け入れる。25H2 未満の一般向け Windows 11 はサポートが終わる時期なので、対象の制約は実質ない。
+
+- 取得: `scripts/winmidi.sh fetch`（版と sha256 を script に固定。`.cache/winmidi/` に winmd / dll / pri）。`crates/midistaged/build.rs` が dll と pri を `target/<profile>/` に写す
+- binding: `scripts/winmidi.sh bindings` が `tools/winmidi-bindgen`（workspace の外）で `crates/midistaged/src/winmidi_bindings.rs` を作る。使う型だけに絞り（今は 4 型、1183 行）、生成物は commit する。bindgen の `[NoException]` static の不具合は、生成後に戻り値を `windows_core::Result<T>` に直して回避する（dll が無いときに panic せず理由を返すため）
+- dll が無ければ `list-ports` は理由を言って失敗する
+
+### ポートの ID
+
+`inventory::Port` は CoreMIDI の整数 ID（`uid` / `physical_device`）を持つ。Windows の endpoint は双方向で、ID は文字列（`\\?\swd#midisrv#…`）。endpoint 1 つを IN / OUT の 2 ポートにし、`uid` は小文字にした endpoint ID + `#in` / `#out` の FNV-1a、`physical_device` は親デバイス ID（`USB\VID_…&PID_…\<serial または挿し口>`）の FNV-1a とする。transport が `KS` / `KSA`（実機のドライバ）でない endpoint（`APP` / `LOOP` / `DIAG` など）は物理ポートとして扱わない。シリアルの無い機材は親 ID に挿し口が入るが、保存の鍵は profile の device ID なので、挿し替えても割り当ては保たれる。送信・受信で `uid` から endpoint ID を引く表は 3 段目で持つ。
 
 ### `native` を OS 共通部分と backend に分ける
 
@@ -89,12 +99,11 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 
 ## 未決
 
-- SDK の runtime がアプリと一緒に配る必要のあるものか、OS に入っているものか（このマシンには `midi.exe` などの SDK ツールが入っていなかった）
-- Rust binding の作り方（`windows-bindgen` で winmd から作るか、C++/WinRT の薄い shim を挟むか）
 - 送信 API が戻った時点の意味（上記）
 - KORG USB-MIDI Driver を入れた機材が、`midisrv` からどう見えるか（Zenith 2 は `MIDIU_KSA_…` の経路だった）
 - Windows のアプリ向けの SDK（Rust SDK は使える。Swift SDK は macOS 専用。C# などは需要が出てから）
-- `Windows.Devices.Midi2.dll` を同梱するか（下の spike 参照）。同梱には Microsoft の go-live 条件が付く
+- 同梱をやめる時期の判定（`MidiApi::IsSystemProvided()` が true の Windows が十分に行き渡ったら）
+- 配布の形（MSIX か、署名付きの exe と installer か）と、自動アップデート（macOS の Sparkle 2 に相当するもの）
 
 ## spike: Rust から Windows.Devices.Midi2（2026-10-19）
 
@@ -103,9 +112,9 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 - windows-bindgen（0.62・0.100 とも）は `[NoException]` の static メソッドを、`Result` を期待する factory の closure の中で素の値を返す形に生成し、コンパイルが通らない（349 箇所）。生成後に `Ok(..)` で包む置換で回避した。0.100 の生成物は `windows-core 0.100` とも合わない
 - 列挙の結果（何も開かず、何も送らない）: endpoint は双方向で 1 機材 1 つ。`GetParentDeviceInformation()` から USB の VID / PID / シリアルが取れる（nanoKONTROL2 は `0944:0117`、シリアル無し。Zenith 2 は `23E5:A2F4`、シリアル有り）。`SupportsMultiClient = true`、transport は nanoKONTROL2 が `KS`（usbmidi2）、Zenith 2 が `KSA`（ベンダードライバ）
 - go-live 条件（Preview 11 のリリースノート）: Windows 11 25H2 以上にだけ配る、API が Windows に入ったら同梱を外す更新を出す、preview API を使っていることを利用者に伝える、新しい preview に追従する、など
-- 配布の形（MSIX か、署名付きの exe と installer か）と、自動アップデート（macOS の Sparkle 2 に相当するもの）
 
 ## Status log
 
 - 2026-10-19: nanoKONTROL2 で Windows MIDI Services の multi-client と SysEx の通り方を実測（`mem_1CgBB8Xpu4BLF1v1hDFtAY`）。`cargo check` を Windows で実行し、`midistage-protocol` / `midistage-client` / `midistage-profiles` は通った。止まるのは `midistaged` の `settings.rs`（`std::os::unix`・`libc::flock`）と、`midistage-core` の `#[link(kind = "framework")]` だけ。この design を起草
 - 2026-10-19: 1 段目。`serve` が Windows で起動して留まる（MIDI backend 無し、機材は waiting）。排他は std の `File::try_lock`（unix は従来どおり flock）、置き場は `%LOCALAPPDATA%\Midistage`、終了の合図は Ctrl-C / Break / close / logoff / shutdown。`list-ports` / `roto-dump` は成功扱いにせず失敗で返す。`cargo test --workspace` と clippy が Windows で通る（Rust SDK の相互テスト 7 件を含む）。Windows での Ctrl-C からの正常終了（`endpoint.json` の削除）は手元で未確認。`.gitattributes` で作業ツリーを LF に固定した（`core.autocrlf` でログ契約の fixture が CRLF になり、バイト比較のテストが落ちたため）
+- 2026-10-19: 2 段目。`list-ports` が Windows MIDI Services で物理ポートを列挙する（read-only）。手元で nanoKONTROL2 → `nanokontrol`、Zenith 2 → `zenith2` の IN / OUT を確認。dll が無い exe では理由を言って失敗することを cli テストで確認。`cargo test --workspace` / clippy / fmt は Windows で通る。macOS 側のビルドとテストは未確認

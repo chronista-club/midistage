@@ -14,3 +14,8 @@ Cargo.lock.bak
 # midistage.app の組立先と SwiftPM の build（apps/ 配下も）
 /dist
 .build/
+
+# Windows.Devices.Midi2 の取得物（scripts/winmidi.sh fetch）
+/.cache/
+# workspace 外の道具の build
+/tools/*/target
