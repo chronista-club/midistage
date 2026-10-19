@@ -76,11 +76,23 @@ fn main() -> Result<()> {
             // TODO v0-alpha: blank KDL template 生成 (config/examples/keystage-default.kdl 参照)
             println!("TODO v0-alpha: init {}", profile);
         }
-        Commands::Pull { profile, scene, global } => {
+        Commands::Pull {
+            profile,
+            scene,
+            global,
+        } => {
             // TODO v0-alpha: Func=0x10 SysEx → response 受信 → 7-bit decode → Scene struct → KDL
-            println!("TODO v0-alpha: pull profile={:?} scene={:?} global={}", profile, scene, global);
+            println!(
+                "TODO v0-alpha: pull profile={:?} scene={:?} global={}",
+                profile, scene, global
+            );
         }
-        Commands::Push { profile, scene, global, write_to_memory } => {
+        Commands::Push {
+            profile,
+            scene,
+            global,
+            write_to_memory,
+        } => {
             // TODO v0-beta: KDL → Scene struct → 500-byte → 7-bit encode → Func=0x40 SysEx
             println!(
                 "TODO v0-beta: push profile={:?} scene={:?} global={} mem={:?}",
