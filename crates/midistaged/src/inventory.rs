@@ -110,16 +110,35 @@ pub fn endpoint_ports(endpoints: &[Endpoint]) -> Vec<Port> {
         .iter()
         .filter(|e| matches!(e.transport.as_str(), "KS" | "KSA"))
         .flat_map(|e| {
-            let id = e.id.to_lowercase();
             let physical_device = fnv1a32(e.parent.to_lowercase().as_bytes()).max(1);
-            [(true, "#in"), (false, "#out")].map(|(input, suffix)| Port {
-                uid: fnv1a32(format!("{id}{suffix}").as_bytes()),
+            [true, false].map(|input| Port {
+                uid: endpoint_uid(&e.id, input),
                 physical_device,
                 name: e.name.clone(),
                 input,
             })
         })
         .collect()
+}
+
+/// endpoint の IN / OUT の uid（純粋）。送受信で uid から endpoint を引くときも同じ計算
+pub fn endpoint_uid(endpoint_id: &str, input: bool) -> u32 {
+    let suffix = if input { "#in" } else { "#out" };
+    fnv1a32(format!("{}{suffix}", endpoint_id.to_lowercase()).as_bytes())
+}
+
+/// Windows の bridge（仮想デバイス）の名前（純粋）。WinMM のアプリにも同じ名前で見えるよう
+/// UTF-16 で 31 単位に収める（design 07）。lease ごとに変わる 6 桁の札で、前の持ち主の名前と区別する
+pub fn windows_bridge_name(client_id: &str, token: &str, uid: u32, port_name: &str) -> String {
+    let tag = fnv1a32(format!("{client_id}/{token}/{uid}").as_bytes()) & 0xff_ffff;
+    let mut name = format!("Midistage/{tag:06x} ");
+    for c in port_name.chars() {
+        if name.encode_utf16().count() + c.len_utf16() > 31 {
+            break;
+        }
+        name.push(c);
+    }
+    name.trim_end().to_owned()
 }
 
 /// FNV-1a 32 bit。保存や比較に使うので版をまたいで変えない
@@ -305,5 +324,19 @@ mod tests {
         ]);
         assert_eq!(ports[0].physical_device, ports[2].physical_device);
         assert_ne!(ports[0].physical_device, ports[4].physical_device);
+    }
+
+    #[test]
+    fn a_windows_bridge_name_fits_winmm_and_is_unique_per_lease() {
+        let a = windows_bridge_name("vp", "boot:1", 11, "nanoKONTROL2");
+        let b = windows_bridge_name("vp", "boot:2", 11, "nanoKONTROL2");
+        assert!(a.starts_with("Midistage/"));
+        assert!(a.ends_with("nanoKONTROL2"));
+        assert_ne!(a, b);
+        assert_eq!(a, windows_bridge_name("vp", "boot:1", 11, "nanoKONTROL2"));
+        // WinMM の名前は 32 WCHAR（NUL 込み）。UTF-16 で 31 単位まで
+        let long = windows_bridge_name("ladyland", "boot:9", 3, "Keystage 61 CTRL ポート 番号つき");
+        assert!(long.encode_utf16().count() <= 31, "{long}");
+        assert!(long.starts_with("Midistage/"));
     }
 }

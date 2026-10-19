@@ -1179,6 +1179,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "club-unison",
+ "midir",
  "midistage-protocol",
  "serde",
  "serde_json",
@@ -1237,6 +1238,7 @@ dependencies = [
  "libc",
  "midir",
  "midistage-client",
+ "midistage-core",
  "midistage-profiles",
  "midistage-protocol",
  "serde",

@@ -45,30 +45,36 @@ API が Windows に入るまでは、NuGet パッケージの dll と pri を mi
 
 `inventory::Port` は CoreMIDI の整数 ID（`uid` / `physical_device`）を持つ。Windows の endpoint は双方向で、ID は文字列（`\\?\swd#midisrv#…`）。endpoint 1 つを IN / OUT の 2 ポートにし、`uid` は小文字にした endpoint ID + `#in` / `#out` の FNV-1a、`physical_device` は親デバイス ID（`USB\VID_…&PID_…\<serial または挿し口>`）の FNV-1a とする。transport が `KS` / `KSA`（実機のドライバ）でない endpoint（`APP` / `LOOP` / `DIAG` など）は物理ポートとして扱わない。シリアルの無い機材は親 ID に挿し口が入るが、保存の鍵は profile の device ID なので、挿し替えても割り当ては保たれる。送信・受信で `uid` から endpoint ID を引く表は 3 段目で持つ。
 
-### `native` を OS 共通部分と backend に分ける
+### OS に依らない段取りは `native_runtime`、OS の呼び出しは backend
 
-`native.rs` は今、`cfg(target_os = "macos")` の 1 ファイルに、CoreMIDI の呼び出しと、OS に依らない段取り（lease の世代で送信を閉じる、`io_fence` で完了を待つ、finalizer を送る）が一緒に入っている。
+`native.rs`（macOS）は、CoreMIDI の呼び出しと、OS に依らない段取り（機材の出入り、lease ごとの bridge の開閉、引き継ぎの完了待ち、送信の直列化と lease の世代での認可、finalizer）を 1 ファイルに持っている。Windows はこの段取りを `native_runtime.rs`（cfg 無し）に移し、OS の呼び出しを 2 つの trait の向こうに置いた。
 
-```
-crates/midistaged/src/native/
-  mod.rs        # OS 共通: NativeRuntime の poll、bridge の開閉の段取り、output_worker、finalizer
-  coremidi.rs   # cfg(macos): 列挙・物理 In/Out・仮想 source/destination・SysEx completion・抜き差し通知
-  winmidi.rs    # cfg(windows): 同じ面を Windows MIDI Services で
-```
+- `Backend`: `discover`（read-only の列挙）と `open`（lease の持ち主専用の bridge を作る。実機を開くのはここだけ）
+- `Bridge`: `fence` / `ports` / `output_sinks` / `finish_release`。drop で閉じる
+- `output_worker(…, send)`: 送信の直列化。`send` は物理 destination へ 1 メッセージ送り、ドライバが受け取るまで戻らない
 
-backend が満たす面は次の 5 つ。trait にするか、cfg で同名の関数を出し分けるかは、分けたときのコードの形を見て決める。
+偽の backend で、bridge を開く条件、抜線後は Quiesced まで閉じないこと、finish の失敗で releasing に留まること、列挙の失敗で落ちないことをテストする。**macOS の `native.rs` はこの PR では変えない**（Windows から macOS 向けの型チェックができない。ring の C コードに clang と Mac の SDK が要る）。macOS を `native_runtime` に載せ替えるのは、macOS で検証できる別 PR。
 
-1. 列挙（read-only）: 物理機材ごとのポート一覧を `inventory::DevicePorts` に入れる。Windows では endpoint device ID と、親の USB デバイス（VID / PID / instance）で、一台の機材のポートをまとめる
-2. 物理 In の購読（timestamp 付き）
-3. 物理 Out への送信と、その完了の通知
-4. lease ごとの仮想 source / destination の作成と破棄
-5. 抜き差しの通知
+### 送信の完了は `WaitForEndpointReceiptOnSend`
 
-### 「送信の完了」の意味を Windows で確かめてから実装する
+物理 endpoint には `MidiEndpointConnectionSettings::CreateInstance(waitForEndpointReceiptOnSend = true)` でつなぐ。送信 API はドライバが受け取るまで戻らない（0x7D の SysEx 67 packet ≈ 400 byte が、false で 0.8 ms、true で 19.5 ms。実測 2026-10-19）。これを CoreMIDI の SysEx completion 相当として扱う。後始末の送信も同じ接続を使うので、`MIDIFlushOutput` に当たる手順は要らない。タイムアウトだけで先へ進めない、という不変条件は変えない。
 
-design 03 の引き継ぎは、送信中の SysEx の完了を確認するまで次の持ち主を active にしない。CoreMIDI では `MIDISendSysex` の completion がこの完了にあたる。Windows MIDI Services の送信 API が戻った時点が、`midisrv` に渡しただけの時点なのか、機材に出た時点なのかは、まだ分かっていない。
+### bridge（仮想デバイス）
 
-前者なら、`midisrv` への受け渡しをもって完了とし、機材が受け付けるまでの余白を別に持つ。macOS で仮想 destination の completion を実機の完了として扱わないのと同じ区別を、design にも書く。タイムアウトだけで先へ進めない、という不変条件は変えない。
+- 物理 endpoint 1 つにつき仮想デバイス 1 つ（双方向、MIDI 1.0 protocol、group 1 つ、function block 1 つ）。アプリは client 側を開き、サービスが device 側（`AddMessageProcessingPlugin`）と物理 endpoint の間を中継する
+- 名前は `Midistage/<6 桁の札> <機材名>`（`inventory::windows_bridge_name`）。札は client / lease token / uid の FNV-1a で、lease ごとに変わる。WinMM の名前は 32 WCHAR（NUL 込み）で切れるので、UTF-16 で 31 単位に収め、新 API のアプリにも WinMM のアプリにも同じ名前で見せる
+- 実機 → アプリ: UMP のまま、元の timestamp で中継する（lease が有効な間だけ）。アプリ → 実機: `midistage_core::midi1::Decoder` で MIDI 1.0 メッセージに組み立て直して送信 worker に積み、`midi1::encode` で UMP に戻して送る。UMP の utility（MT 0）と stream（MT F。service が仮想デバイスに送ってくる endpoint discovery など）は中継しない
+- group 0 だけを扱う。複数 group の機材（Keystage の CTRL ポートなど）は未対応
+- 物理 endpoint の列挙（`FindAll`）は 1 回 約 60 ms かかるので、1 秒ごとにして間は前回の結果を使う
+
+### 今の midisrv は仮想デバイスを閉じると固まる → bridge は opt-in
+
+Windows 11 26200 の in-box transport（`Midi2.VirtualMidiTransport.dll` 1.0.15.0）は、仮想デバイスの接続を閉じると `midisrv` が応答しなくなる（microsoft/MIDI#1047。実測 2026-10-19 に 3 回）。以後は誰が `CreateVirtualDevice` を呼んでも戻らず、`midisrv` の再起動（強制終了か PC の再起動。止める合図には応えない）まで、仮想ポートを使うすべてのアプリが止まる。修正は Windows の更新（11 月末の 11D、有効になるまで最大 45 日）で届き、同梱の API（1.0.16）では直らない。仮想デバイスを閉じずにプロセスが終わった場合は、その後も作れた（2 回）。
+
+- `serve --experimental-windows-bridge` のときだけ bridge を作る。既定では作らず、機材の error に理由と試し方を出す（空の成功にしない）。lease と状態の管理は既定でも動く
+- `open` は別 thread で時限（10 秒）付き（`watchdog::Watchdog`）。戻らなければエラーにし、止まった呼び出しが残る間は次を始めない（止まった thread を積み重ねない）。引き継ぎの完了待ちには時限を使わない
+- 接続を外す呼び出しは別 thread に逃がす。中継と送信は先に止めているので、戻らなくても native の worker は止まらない
+- 「閉じた仮想デバイスが一覧から消えるまで待ってから次を開く」待ち時間も試したが、閉じる側で固まるので効かなかった（外した）
 
 ### OS 境界の小物
 
@@ -91,7 +97,7 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 
 1. **Windows で `serve` が起動する**: `settings` / `paths` / 終了の合図を出し分け、`native` 抜きで lease と状態だけ動かす。Rust SDK の相互テストを Windows で通す。`midistage-core` の CoreMIDI FFI も cfg で閉じる
 2. **`list-ports`**: Windows MIDI Services で物理ポートを read-only で列挙する（何も開かず、何も送らない）。nanoKONTROL2 と Zenith 2 で確かめる
-3. **native 本体**: 物理 In / Out、仮想 endpoint、送信完了の意味の確認、引き継ぎ。nanoKONTROL2 から（design 03「観測と移行」と同じ順）
+3. **native 本体**: 物理 In / Out、仮想 endpoint、送信完了の意味の確認、引き継ぎ。nanoKONTROL2 から（design 03「観測と移行」と同じ順）。**bridge は Windows の修正待ちで opt-in**（上記）
 4. **常駐と配布**: タスクトレイ app、署名、登録
 5. **ROTO の Serial**（design 06 の Windows 版）
 
@@ -99,7 +105,10 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 
 ## 未決
 
-- 送信 API が戻った時点の意味（上記）
+- bridge の実機確認（Windows の 11D 修正の後）: A → B の引き継ぎを通しで、VP で nanoKONTROL2 から lane を選ぶ、旧アプリの遅延送信が実機に流れないこと。確認できたら opt-in を外す
+- macOS の `native.rs` を `native_runtime` に載せ替える（macOS で検証できる別 PR）
+- 複数 group の機材（Keystage の CTRL ポートなど）の bridge
+- `GetAssociatedClientEndpointDeviceId(config.AssociationId())` が空を返した（spike）。今は名前でポートを選ぶので使っていない
 - KORG USB-MIDI Driver を入れた機材が、`midisrv` からどう見えるか（Zenith 2 は `MIDIU_KSA_…` の経路だった）
 - Windows のアプリ向けの SDK（Rust SDK は使える。Swift SDK は macOS 専用。C# などは需要が出てから）
 - 同梱をやめる時期の判定（`MidiApi::IsSystemProvided()` が true の Windows が十分に行き渡ったら）
@@ -118,3 +127,4 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 - 2026-10-19: nanoKONTROL2 で Windows MIDI Services の multi-client と SysEx の通り方を実測（`mem_1CgBB8Xpu4BLF1v1hDFtAY`）。`cargo check` を Windows で実行し、`midistage-protocol` / `midistage-client` / `midistage-profiles` は通った。止まるのは `midistaged` の `settings.rs`（`std::os::unix`・`libc::flock`）と、`midistage-core` の `#[link(kind = "framework")]` だけ。この design を起草
 - 2026-10-19: 1 段目。`serve` が Windows で起動して留まる（MIDI backend 無し、機材は waiting）。排他は std の `File::try_lock`（unix は従来どおり flock）、置き場は `%LOCALAPPDATA%\Midistage`、終了の合図は Ctrl-C / Break / close / logoff / shutdown。`list-ports` / `roto-dump` は成功扱いにせず失敗で返す。`cargo test --workspace` と clippy が Windows で通る（Rust SDK の相互テスト 7 件を含む）。Windows での Ctrl-C からの正常終了（`endpoint.json` の削除）は手元で未確認。`.gitattributes` で作業ツリーを LF に固定した（`core.autocrlf` でログ契約の fixture が CRLF になり、バイト比較のテストが落ちたため）
 - 2026-10-19: 2 段目。`list-ports` が Windows MIDI Services で物理ポートを列挙する（read-only）。手元で nanoKONTROL2 → `nanokontrol`、Zenith 2 → `zenith2` の IN / OUT を確認。dll が無い exe では理由を言って失敗することを cli テストで確認。`cargo test --workspace` / clippy / fmt は Windows で通る。macOS 側のビルドとテストは未確認
+- 2026-10-19: 3 段目。`native_runtime`（OS に依らない段取り、偽 backend のテスト付き）、`midistage_core::midi1`（MIDI 1.0 ⇄ UMP）、`winmidi` の bridge（仮想デバイス + `WaitForEndpointReceiptOnSend`）、`watchdog`。引き継ぎを手で試す `midistage-client` の example `try_lease`（アプリ B の代役。Ladyland に Windows 版が無いため）。実機（nanoKONTROL2）: A の bridge open（約 135 ms）→ SendMidi の Device Inquiry 応答が bridge 入力に届く → B の takeover で A に Quiesce → A が Quiesced → A の bridge close、まで通った。close で midisrv が固まり（microsoft/MIDI#1047）、B 以降は実機確認待ち。bridge を opt-in にし、既定では機材の error に理由を出すことを実機で確認（警告は 1 回だけ）

@@ -33,6 +33,10 @@ enum Command {
         /// ログの置き場（既定 ~/Library/Logs/midistaged、日次ローテーション）。stderr にも出す
         #[arg(long)]
         log_dir: Option<PathBuf>,
+        /// Windows: アプリ用の仮想ポート（bridge）を作る。今の Windows MIDI Services は仮想ポートを閉じると
+        /// MIDI サービスが固まることがある（microsoft/MIDI#1047。修正は Windows の更新）。試すときだけ
+        #[arg(long)]
+        experimental_windows_bridge: bool,
     },
     /// CoreMIDI の物理ポートを列挙する。接続や MIDI 送信は行わない。
     ListPorts,
@@ -159,7 +163,13 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Command::Serve { state_dir, .. } => {
+        Command::Serve {
+            state_dir,
+            experimental_windows_bridge,
+            ..
+        } => {
+            #[cfg(not(windows))]
+            let _ = experimental_windows_bridge;
             let directory = midistaged::paths::state_dir(home.as_deref(), state_dir)?;
             // 別の midistaged（開発用の cargo run など）が動いていれば静かに退く。exit 0 なので
             // launchd の KeepAlive {SuccessfulExit=false} は起こし直さない（design 05）
@@ -254,8 +264,25 @@ async fn main() -> anyhow::Result<()> {
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
                 }
-                // MIDI の backend がまだ無い（design 07）。lease と状態だけで動き、機材は waiting のまま
-                #[cfg(not(target_os = "macos"))]
+                // Windows MIDI Services（design 07）。段取りは native_runtime、OS の呼び出しは winmidi
+                #[cfg(windows)]
+                {
+                    let mut native = midistaged::native_runtime::NativeRuntime::new(
+                        shared,
+                        midistaged::winmidi::Midi2Backend::new(experimental_windows_bridge),
+                    );
+                    let mut ticks: u32 = 0;
+                    while worker_running.load(Ordering::Acquire) {
+                        native.poll();
+                        ticks = ticks.wrapping_add(1);
+                        if ticks.is_multiple_of(20) {
+                            midistaged::trace::refresh(&trace_dir);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(50));
+                    }
+                }
+                // MIDI の backend が無い OS。lease と状態だけで動き、機材は waiting のまま
+                #[cfg(not(any(target_os = "macos", windows)))]
                 {
                     let _ = (worker_running, shared, trace_dir);
                     tracing::warn!(

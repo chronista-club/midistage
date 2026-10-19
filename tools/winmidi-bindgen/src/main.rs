@@ -11,6 +11,23 @@ const TYPES: &[&str] = &[
     "Windows.Devices.Midi2.Enumeration.MidiEndpointDeviceInformation",
     "Windows.Devices.Midi2.Enumeration.MidiParentDeviceInformation",
     "Windows.Devices.Midi2.Enumeration.MidiEndpointTransportSuppliedInfo",
+    // bridge（design 07 の 3 段目）
+    "Windows.Devices.Midi2.MidiSession",
+    "Windows.Devices.Midi2.MidiEndpointConnection",
+    "Windows.Devices.Midi2.MidiEndpointConnectionSettings",
+    "Windows.Devices.Midi2.MidiMessageReceivedEventArgs",
+    "Windows.Devices.Midi2.Enumeration.MidiFunctionBlock",
+    "Windows.Devices.Midi2.Enumeration.MidiDeclaredEndpointInfo",
+    "Windows.Devices.Midi2.Enumeration.MidiFunctionBlockDirection",
+    "Windows.Devices.Midi2.Enumeration.MidiFunctionBlockUIHint",
+    "Windows.Devices.Midi2.Enumeration.MidiFunctionBlockRepresentsMidi10Connection",
+    "Windows.Devices.Midi2.MidiGroup",
+    "Windows.Devices.Midi2.MidiSendMessageResults",
+    "Windows.Devices.Midi2.IMidiEndpointMessageProcessingPlugin",
+    "Windows.Devices.Midi2.MidiMessageProcessingPluginAddResult",
+    "Windows.Devices.Midi2.Transports.Virtual.MidiVirtualDeviceManager",
+    "Windows.Devices.Midi2.Transports.Virtual.MidiVirtualDevice",
+    "Windows.Devices.Midi2.Transports.Virtual.MidiVirtualDeviceCreationConfig",
 ];
 
 fn main() {
