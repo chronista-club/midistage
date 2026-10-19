@@ -27,6 +27,7 @@
     unused_unsafe
 )]
 pub mod coremidi_sys;
+pub mod midi1;
 pub mod ump;
 
 // TODO v0-alpha: pub mod sysex;     // KORG SysEx (Func=0x10/0x40/0x0E/0x51 等)
