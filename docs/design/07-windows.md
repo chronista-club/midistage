@@ -99,3 +99,4 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 ## Status log
 
 - 2026-10-19: nanoKONTROL2 で Windows MIDI Services の multi-client と SysEx の通り方を実測（`mem_1CgBB8Xpu4BLF1v1hDFtAY`）。`cargo check` を Windows で実行し、`midistage-protocol` / `midistage-client` / `midistage-profiles` は通った。止まるのは `midistaged` の `settings.rs`（`std::os::unix`・`libc::flock`）と、`midistage-core` の `#[link(kind = "framework")]` だけ。この design を起草
+- 2026-10-19: 1 段目。`serve` が Windows で起動して留まる（MIDI backend 無し、機材は waiting）。排他は std の `File::try_lock`（unix は従来どおり flock）、置き場は `%LOCALAPPDATA%\Midistage`、終了の合図は Ctrl-C / Break / close / logoff / shutdown。`list-ports` / `roto-dump` は成功扱いにせず失敗で返す。`cargo test --workspace` と clippy が Windows で通る（Rust SDK の相互テスト 7 件を含む）。Windows での Ctrl-C からの正常終了（`endpoint.json` の削除）は手元で未確認。`.gitattributes` で作業ツリーを LF に固定した（`core.autocrlf` でログ契約の fixture が CRLF になり、バイト比較のテストが落ちたため）

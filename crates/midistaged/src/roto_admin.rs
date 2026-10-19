@@ -16,8 +16,12 @@
 //! - **すべて同期（ブロックする）**。async の中から直接呼ばない — `spawn_blocking` か専用 thread で
 //! - いまは **読み取りだけ**。書き込みは報告と GO の後
 
-use midistage_profiles::roto_serial::{self as rs, Event, Parser};
+use midistage_profiles::roto_serial as rs;
+// 線の世話（port）は macOS だけ。Windows は design 07 の 5 段目
+#[cfg(target_os = "macos")]
+use midistage_profiles::roto_serial::{Event, Parser};
 use serde::Serialize;
+#[cfg(target_os = "macos")]
 use std::time::{Duration, Instant};
 
 pub const VENDOR: u16 = 0x2E8A;
@@ -125,7 +129,9 @@ impl SetupDump {
 }
 
 #[cfg(target_os = "macos")]
-pub use port::{Applied, Session, apply_setup, list_serial_ports, read_all, select_setup, with_port};
+pub use port::{
+    Applied, Session, apply_setup, list_serial_ports, read_all, select_setup, with_port,
+};
 
 #[cfg(target_os = "macos")]
 mod port {

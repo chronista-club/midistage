@@ -51,7 +51,7 @@ enum Command {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     // serve だけファイルにも書く。guard は main の終わりまで持つ（drop で flush）
-    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let home = std::env::var_os(midistaged::paths::ROOT_VAR).map(PathBuf::from);
     let _log_guard = match &args.command {
         Command::Serve { log_dir, .. } => {
             let dir = midistaged::paths::log_dir(home.as_deref(), log_dir.clone())?;
@@ -86,6 +86,11 @@ async fn main() -> anyhow::Result<()> {
     };
     match args.command {
         Command::RotoDump { out, port } => {
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (out, port);
+                anyhow::bail!("roto-dump is not available on this OS yet (design 07)");
+            }
             #[cfg(target_os = "macos")]
             {
                 // 同期 I/O（最大 2 分弱）。async の runtime を塞がない
@@ -128,8 +133,10 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
         }
-        Command::ListPorts =>
-        {
+        Command::ListPorts => {
+            // 空の一覧を成功として返さない
+            #[cfg(not(target_os = "macos"))]
+            anyhow::bail!("list-ports has no MIDI backend on this OS yet (design 07)");
             #[cfg(target_os = "macos")]
             for (id, device) in midistaged::native::discover() {
                 if let Some(error) = device.error {
@@ -240,6 +247,14 @@ async fn main() -> anyhow::Result<()> {
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
                 }
+                // MIDI の backend がまだ無い（design 07）。lease と状態だけで動き、機材は waiting のまま
+                #[cfg(not(target_os = "macos"))]
+                {
+                    let _ = (worker_running, shared, trace_dir);
+                    tracing::warn!(
+                        "no MIDI backend on this OS yet (design 07); devices stay waiting"
+                    );
+                }
             });
             tracing::info!(
                 port = service.endpoint.port,
@@ -250,6 +265,22 @@ async fn main() -> anyhow::Result<()> {
                 let mut terminate =
                     tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
                 tokio::select! { result = tokio::signal::ctrl_c() => { result?; }, _ = terminate.recv() => {} }
+            }
+            // Windows: Ctrl-C / Ctrl-Break、コンソールを閉じる、ログオフ、シャットダウン
+            #[cfg(windows)]
+            {
+                use tokio::signal::windows;
+                let mut brk = windows::ctrl_break()?;
+                let mut close = windows::ctrl_close()?;
+                let mut logoff = windows::ctrl_logoff()?;
+                let mut shutdown = windows::ctrl_shutdown()?;
+                tokio::select! {
+                    result = tokio::signal::ctrl_c() => { result?; },
+                    _ = brk.recv() => {},
+                    _ = close.recv() => {},
+                    _ = logoff.recv() => {},
+                    _ = shutdown.recv() => {},
+                }
             }
             running.store(false, Ordering::Release);
             // native Drop が lease を無効にして送信完了を待つ。timeout で引き渡さない。
