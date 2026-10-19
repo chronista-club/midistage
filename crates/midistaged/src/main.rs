@@ -204,7 +204,7 @@ async fn main() -> anyhow::Result<()> {
             let trace_dir = directory.clone();
             midistaged::trace::refresh(&trace_dir);
             // design 06: 設定ポート（Roto の Serial）の用事を 1 つずつ。MIDI の poll を止めないよう別 thread
-            #[cfg(target_os = "macos")]
+            // Serial の無い OS では用事ごとに理由を言って失敗する（受け付けたまま終わらせない。design 07）
             {
                 let setups = service.runtime.clone();
                 let setups_running = running.clone();

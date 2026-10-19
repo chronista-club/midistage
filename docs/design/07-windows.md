@@ -38,7 +38,7 @@ OS が解いたのは「開ける・壊れない」まで。要求の順番待�
 API が Windows に入るまでは、NuGet パッケージの dll と pri を midistaged.exe の隣に置く。Microsoft の go-live 条件（下の spike）を受け入れる。25H2 未満の一般向け Windows 11 はサポートが終わる時期なので、対象の制約は実質ない。
 
 - 取得: `scripts/winmidi.sh fetch`（版と sha256 を script に固定。`.cache/winmidi/` に winmd / dll / pri）。`crates/midistaged/build.rs` が dll と pri を `target/<profile>/` に写す
-- binding: `scripts/winmidi.sh bindings` が `tools/winmidi-bindgen`（workspace の外）で `crates/midistaged/src/winmidi_bindings.rs` を作る。使う型だけに絞り（今は 4 型、1183 行）、生成物は commit する。bindgen の `[NoException]` static の不具合は、生成後に戻り値を `windows_core::Result<T>` に直して回避する（dll が無いときに panic せず理由を返すため）
+- binding: `scripts/winmidi.sh bindings` が `tools/winmidi-bindgen`（workspace の外）で `crates/midistaged/src/winmidi_bindings.rs` を作る。使う型だけに絞り（型の一覧は `tools/winmidi-bindgen` の `TYPES`）、生成物は commit する。bindgen の `[NoException]` static の不具合は、生成後に戻り値を `windows_core::Result<T>` に直して回避する（dll が無いときに panic せず理由を返すため）
 - dll が無ければ `list-ports` は理由を言って失敗する
 
 ### ポートの ID
@@ -108,6 +108,7 @@ Windows サービスは session 0 で動く。そこからユーザーの MIDI �
 - bridge の実機確認（Windows の 11D 修正の後）: A → B の引き継ぎを通しで、VP で nanoKONTROL2 から lane を選ぶ、旧アプリの遅延送信が実機に流れないこと。確認できたら opt-in を外す
 - macOS の `native.rs` を `native_runtime` に載せ替える（macOS で検証できる別 PR）
 - 複数 group の機材（Keystage の CTRL ポートなど）の bridge
+- bridge を有効にしたときの残りのリスク（コードレビュー 2026-10-19、実機確認の時に見る）: 抜線後に `IsOpen()` が true のままだと後始末（Keystage の接続モード解除）の送信が失敗し続け releasing に留まりうる（macOS は endpoint が引けなければ飛ばす）。open の失敗は poll（50 ms）ごとに再試行し、作りかけの仮想デバイスを閉じる処理が #1047 の引き金になりうる → 機材ごとの間隔を検討
 - `GetAssociatedClientEndpointDeviceId(config.AssociationId())` が空を返した（spike）。今は名前でポートを選ぶので使っていない
 - KORG USB-MIDI Driver を入れた機材が、`midisrv` からどう見えるか（Zenith 2 は `MIDIU_KSA_…` の経路だった）
 - Windows のアプリ向けの SDK（Rust SDK は使える。Swift SDK は macOS 専用。C# などは需要が出てから）

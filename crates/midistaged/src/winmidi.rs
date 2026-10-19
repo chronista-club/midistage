@@ -158,9 +158,14 @@ impl Backend for Midi2Backend {
             _ => anyhow::bail!("MIDI devices are not listed"),
         };
         let (runtime, device_id, ports) = (runtime.clone(), device_id.to_owned(), ports.to_vec());
-        self.watchdog.call("MIDI bridge open", OPEN_LIMIT, move || {
+        let result = self.watchdog.call("MIDI bridge open", OPEN_LIMIT, move || {
             WinBridge::open(&runtime, session, &ids, &device_id, lease, &ports)
-        })
+        });
+        if result.is_err() {
+            // midisrv を再起動すると session は死ぬ。次は作り直す
+            self.session = None;
+        }
+        result
     }
 }
 
@@ -180,6 +185,8 @@ pub struct WinBridge {
     /// 物理 OUT の uid → 物理側の connection（送信 worker と後始末が使う）
     outputs: Arc<BTreeMap<u32, MidiEndpointConnection>>,
     sender: Option<mpsc::SyncSender<OutputRequest>>,
+    /// アプリ → 実機の中継が積む先。drop で先に取り上げる（handler が WinRT に残っても worker を終わらせる）
+    relay_sender: Arc<Mutex<Option<mpsc::SyncSender<OutputRequest>>>>,
     worker: Option<thread::JoinHandle<()>>,
     fence: Arc<IoFence>,
     ports: NativePorts,
@@ -289,6 +296,7 @@ impl WinBridge {
             session: session.clone(),
             links: vec![],
             outputs: Arc::default(),
+            relay_sender: Arc::new(Mutex::new(Some(sender.clone()))),
             sender: Some(sender),
             worker: None,
             fence,
@@ -312,12 +320,25 @@ impl WinBridge {
                     &MidiEndpointConnectionSettings::CreateInstance(true)?,
                 )
                 .ok_or_else(|| anyhow::anyhow!("cannot connect to {}", port.name))?;
-            tracing::debug!("{device_id}: creating virtual device {name}");
-            let device = create_virtual_device(&name, &instance)?;
-            tracing::debug!("{device_id}: connecting the virtual device");
-            let virtual_ = session
-                .CreateEndpointConnection(&device.DeviceEndpointDeviceId())
-                .ok_or_else(|| anyhow::anyhow!("cannot connect to the virtual device {name}"))?;
+            let made = (|| {
+                tracing::debug!("{device_id}: creating virtual device {name}");
+                let device = create_virtual_device(&name, &instance)?;
+                tracing::debug!("{device_id}: connecting the virtual device");
+                let virtual_ = session
+                    .CreateEndpointConnection(&device.DeviceEndpointDeviceId())
+                    .ok_or_else(|| {
+                        anyhow::anyhow!("cannot connect to the virtual device {name}")
+                    })?;
+                anyhow::Ok((device, virtual_))
+            })();
+            let (device, virtual_) = match made {
+                Ok(made) => made,
+                Err(error) => {
+                    // まだ links に入っていない物理側の接続を session に残さない
+                    session.DisconnectEndpointConnection(physical.ConnectionId());
+                    return Err(error);
+                }
+            };
             virtual_.AddMessageProcessingPlugin(&device);
             let mut link = Link {
                 physical: physical.clone(),
@@ -458,7 +479,7 @@ impl WinBridge {
         port_name: &str,
     ) -> anyhow::Result<i64> {
         let (runtime, fence) = (self.runtime.clone(), self.fence.clone());
-        let sender = self.sender.as_ref().expect("sender exists").clone();
+        let relay = self.relay_sender.clone();
         let (client, port) = (client_id.to_owned(), port_name.to_owned());
         let decoder = Mutex::new(midi1::Decoder::default());
         let handler = TypedEventHandler::new(move |_, args: Ref<MidiMessageReceivedEventArgs>| {
@@ -479,7 +500,12 @@ impl WinBridge {
                 bytes,
                 completion: None,
             };
-            if sender.try_send(request).is_err() {
+            let queued = match relay.lock().expect("relay mutex poisoned").as_ref() {
+                Some(sender) => sender.try_send(request).is_ok(),
+                // 閉じている最中。もう積まない
+                None => return Ok(()),
+            };
+            if !queued {
                 if trace::enabled() {
                     trace::overflow(&fence.device_id, &client);
                 }
@@ -559,6 +585,10 @@ impl Drop for WinBridge {
         tracing::debug!("{device}: input handlers removed");
         self.output_sinks.clear();
         self.sender.take();
+        self.relay_sender
+            .lock()
+            .expect("relay mutex poisoned")
+            .take();
         // runtime mutex の外で drop すること。worker は認可時に同じ mutex を取る
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();

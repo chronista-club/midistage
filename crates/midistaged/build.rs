@@ -10,6 +10,13 @@ fn main() {
     if std::env::var("CARGO_CFG_TARGET_OS").as_deref() != Ok("windows") {
         return;
     }
+    // scripts/winmidi.sh fetch が取るのは win-x64 の dll だけ
+    if std::env::var("CARGO_CFG_TARGET_ARCH").as_deref() != Ok("x86_64") {
+        println!(
+            "cargo:warning=only the win-x64 Windows.Devices.Midi2.dll is fetched; this target needs its own (design 07)"
+        );
+        return;
+    }
     let manifest = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("manifest dir"));
     let source = std::env::var_os("MIDISTAGE_WINMIDI_DIR")
         .map(PathBuf::from)

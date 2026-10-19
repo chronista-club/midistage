@@ -14,6 +14,14 @@ fn cli_exposes_explicit_serve_and_read_only_inventory_commands() {
 #[cfg(windows)]
 #[test]
 fn list_ports_without_the_midi2_dll_names_what_is_missing() {
+    // API が Windows に入った PC では、exe の隣に dll が無くても OS のものが使われる（design 07）
+    let system = std::path::PathBuf::from(std::env::var_os("SystemRoot").unwrap_or_default())
+        .join("System32")
+        .join("Windows.Devices.Midi2.dll");
+    if system.exists() {
+        eprintln!("skip: Windows.Devices.Midi2 is provided by Windows on this PC");
+        return;
+    }
     let dir = tempfile::tempdir().unwrap();
     let exe = dir.path().join("midistaged.exe");
     std::fs::copy(env!("CARGO_BIN_EXE_midistaged"), &exe).unwrap();

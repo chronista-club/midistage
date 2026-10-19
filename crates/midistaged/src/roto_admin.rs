@@ -128,10 +128,37 @@ impl SetupDump {
     }
 }
 
+/// 書き込みの結果（ログと報告用）
+#[derive(Debug, Serialize)]
+pub struct Applied {
+    pub ops: usize,
+    /// 書く前の中身の控え
+    pub backup: std::path::PathBuf,
+    pub port_open_ms: u128,
+    pub requests: usize,
+}
+
 #[cfg(target_os = "macos")]
-pub use port::{
-    Applied, Session, apply_setup, list_serial_ports, read_all, select_setup, with_port,
-};
+pub use port::{Session, apply_setup, list_serial_ports, read_all, select_setup, with_port};
+#[cfg(not(target_os = "macos"))]
+pub use unavailable::{apply_setup, select_setup};
+
+/// Serial の線の世話がまだ無い OS（Windows は design 07 の 5 段目）。setup の用事は受け付けたまま
+/// 終わらせず、理由を言って失敗する（`configuring` が戻り、`config_error` に出る）
+#[cfg(not(target_os = "macos"))]
+mod unavailable {
+    const REASON: &str = "ROTO serial is not available on this OS yet (design 07)";
+    pub fn select_setup(_setup: u8) -> anyhow::Result<()> {
+        anyhow::bail!(REASON)
+    }
+    pub fn apply_setup(
+        _setup: u8,
+        _desired: &crate::roto_setup::Desired,
+        _backup_dir: &std::path::Path,
+    ) -> anyhow::Result<super::Applied> {
+        anyhow::bail!(REASON)
+    }
+}
 
 #[cfg(target_os = "macos")]
 mod port {
@@ -390,16 +417,6 @@ mod port {
             }
         }
         Ok(current)
-    }
-
-    /// 書き込みの結果（ログと報告用）
-    #[derive(Debug, Serialize)]
-    pub struct Applied {
-        pub ops: usize,
-        /// 書く前の中身の控え
-        pub backup: std::path::PathBuf,
-        pub port_open_ms: u128,
-        pub requests: usize,
     }
 
     /// setup の中身を書く（段 C）。開く → 今の中身を読んで控える → 差分だけ START / SET・CLEAR / END →
@@ -673,6 +690,20 @@ mod tests {
             !renamed.is_free(),
             "別の番号の既定名は、誰かが付けた名前とみなす"
         );
+    }
+
+    /// Serial の無い OS では、setup の用事を受け付けたまま終わらせない。理由を言って失敗する
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn setup_jobs_fail_with_a_reason_where_serial_is_not_available() {
+        let error = select_setup(2).unwrap_err().to_string();
+        assert!(error.contains("design 07"), "{error}");
+        let dir = tempfile::tempdir().unwrap();
+        let desired = crate::roto_setup::Desired::default();
+        let error = apply_setup(2, &desired, dir.path())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("design 07"), "{error}");
     }
 }
 
