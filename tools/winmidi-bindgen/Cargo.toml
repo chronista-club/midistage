@@ -1,0 +1,12 @@
+# Windows.Devices.Midi2 の Rust binding を作る道具（design 07）。workspace の外。
+# 使い方は scripts/winmidi.sh bindings
+[package]
+name = "winmidi-bindgen"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+windows-bindgen = "=0.62.1"
+
+[workspace]

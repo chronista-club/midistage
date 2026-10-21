@@ -33,3 +33,10 @@ core-foundation-sys = "0.8"
 [dev-dependencies]
 tempfile = "3"
 midistage-client = { path = "../midistage-client" }
+
+# Windows MIDI Services（design 07）。binding は src/winmidi_bindings.rs（scripts/winmidi.sh bindings）
+[target.'cfg(windows)'.dependencies]
+windows-core = "0.62"
+windows-collections = "0.3"
+midistage-core.workspace = true
+windows = { version = "0.62", features = ["Foundation", "Foundation_Collections", "Devices_Enumeration", "Data_Json"] }

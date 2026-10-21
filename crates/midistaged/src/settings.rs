@@ -41,25 +41,14 @@ pub struct RuntimeLock {
 }
 impl RuntimeLock {
     pub fn acquire(directory: &Path) -> anyhow::Result<Self> {
-        use std::os::{
-            fd::AsRawFd,
-            unix::fs::{OpenOptionsExt, PermissionsExt},
-        };
-        std::fs::create_dir_all(directory)?;
-        std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700))?;
-        let file = std::fs::OpenOptions::new()
-            .read(true)
-            .write(true)
-            .create(true)
-            .truncate(false)
-            .mode(0o600)
-            .open(directory.join("runtime.lock"))?;
+        private_dir(directory)?;
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true).write(true).create(true).truncate(false);
+        let file = private_file(&mut options).open(directory.join("runtime.lock"))?;
         // inode は削除しない。close で lock を解放し、全起動が同じ inode を使う。
-        if unsafe { libc::flock(file.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
-            anyhow::bail!(
-                "midistaged already running or lock unavailable: {}",
-                std::io::Error::last_os_error()
-            );
+        // unix は flock(LOCK_EX | LOCK_NB)、Windows は LockFileEx（排他・即失敗）
+        if let Err(error) = file.try_lock() {
+            anyhow::bail!("midistaged already running or lock unavailable: {error}");
         }
         Ok(Self { _file: file })
     }
@@ -102,26 +91,54 @@ impl SettingsStore {
 
 /// rename の対象と別 inode を flock する。サービス単一起動 lock は runtime.lock。
 pub fn atomic_write(directory: &Path, name: &str, bytes: &[u8]) -> anyhow::Result<()> {
-    use std::os::unix::fs::{OpenOptionsExt, PermissionsExt};
-    std::fs::create_dir_all(directory)?;
-    std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700))?;
+    private_dir(directory)?;
     let temporary = directory.join(format!(".{name}.{}", uuid::Uuid::new_v4()));
     let result = (|| -> anyhow::Result<()> {
-        let mut file = std::fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(&temporary)?;
+        let mut options = std::fs::OpenOptions::new();
+        options.write(true).create_new(true);
+        let mut file = private_file(&mut options).open(&temporary)?;
         file.write_all(bytes)?;
         file.sync_all()?;
         std::fs::rename(&temporary, directory.join(name))?;
-        std::fs::File::open(directory)?.sync_all()?;
+        sync_dir(directory)?;
         Ok(())
     })();
     if result.is_err() {
         let _ = std::fs::remove_file(temporary);
     }
     result
+}
+
+// 自分だけが読める置き場。unix は 0700 / 0600。Windows は %LOCALAPPDATA% 配下の
+// ユーザーごとの ACL に任せ、追加の ACL は付けない（design 07）
+#[cfg(unix)]
+fn private_dir(directory: &Path) -> std::io::Result<()> {
+    use std::os::unix::fs::PermissionsExt;
+    std::fs::create_dir_all(directory)?;
+    std::fs::set_permissions(directory, std::fs::Permissions::from_mode(0o700))
+}
+#[cfg(not(unix))]
+fn private_dir(directory: &Path) -> std::io::Result<()> {
+    std::fs::create_dir_all(directory)
+}
+#[cfg(unix)]
+fn private_file(options: &mut std::fs::OpenOptions) -> &mut std::fs::OpenOptions {
+    use std::os::unix::fs::OpenOptionsExt;
+    options.mode(0o600)
+}
+#[cfg(not(unix))]
+fn private_file(options: &mut std::fs::OpenOptions) -> &mut std::fs::OpenOptions {
+    options
+}
+// rename をディスクに残す。Windows はディレクトリを開いて fsync できない（NTFS の
+// rename は metadata の journal に乗る）
+#[cfg(unix)]
+fn sync_dir(directory: &Path) -> std::io::Result<()> {
+    std::fs::File::open(directory)?.sync_all()
+}
+#[cfg(not(unix))]
+fn sync_dir(_directory: &Path) -> std::io::Result<()> {
+    Ok(())
 }
 
 #[cfg(test)]
