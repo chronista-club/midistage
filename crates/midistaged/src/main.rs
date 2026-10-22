@@ -33,6 +33,10 @@ enum Command {
         /// ログの置き場（既定 ~/Library/Logs/midistaged、日次ローテーション）。stderr にも出す
         #[arg(long)]
         log_dir: Option<PathBuf>,
+        /// Windows: アプリ用の仮想ポート（bridge）を作る。今の Windows MIDI Services は仮想ポートを閉じると
+        /// MIDI サービスが固まることがある（microsoft/MIDI#1047。修正は Windows の更新）。試すときだけ
+        #[arg(long)]
+        experimental_windows_bridge: bool,
     },
     /// CoreMIDI の物理ポートを列挙する。接続や MIDI 送信は行わない。
     ListPorts,
@@ -51,7 +55,7 @@ enum Command {
 async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     // serve だけファイルにも書く。guard は main の終わりまで持つ（drop で flush）
-    let home = std::env::var_os("HOME").map(PathBuf::from);
+    let home = std::env::var_os(midistaged::paths::ROOT_VAR).map(PathBuf::from);
     let _log_guard = match &args.command {
         Command::Serve { log_dir, .. } => {
             let dir = midistaged::paths::log_dir(home.as_deref(), log_dir.clone())?;
@@ -86,6 +90,11 @@ async fn main() -> anyhow::Result<()> {
     };
     match args.command {
         Command::RotoDump { out, port } => {
+            #[cfg(not(target_os = "macos"))]
+            {
+                let _ = (out, port);
+                anyhow::bail!("roto-dump is not available on this OS yet (design 07)");
+            }
             #[cfg(target_os = "macos")]
             {
                 // 同期 I/O（最大 2 分弱）。async の runtime を塞がない
@@ -128,10 +137,19 @@ async fn main() -> anyhow::Result<()> {
                 );
             }
         }
-        Command::ListPorts =>
-        {
+        Command::ListPorts => {
             #[cfg(target_os = "macos")]
-            for (id, device) in midistaged::native::discover() {
+            let devices = midistaged::native::discover();
+            // Windows MIDI Services（design 07）。API が使えなければ理由を返して失敗する
+            #[cfg(windows)]
+            let devices = midistaged::winmidi::discover()?;
+            // 空の一覧を成功として返さない
+            #[cfg(not(any(target_os = "macos", windows)))]
+            let devices: std::collections::BTreeMap<
+                String,
+                midistaged::inventory::DevicePorts,
+            > = anyhow::bail!("list-ports has no MIDI backend on this OS yet (design 07)");
+            for (id, device) in devices {
                 if let Some(error) = device.error {
                     println!("{id}: {error}");
                 }
@@ -145,7 +163,13 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         }
-        Command::Serve { state_dir, .. } => {
+        Command::Serve {
+            state_dir,
+            experimental_windows_bridge,
+            ..
+        } => {
+            #[cfg(not(windows))]
+            let _ = experimental_windows_bridge;
             let directory = midistaged::paths::state_dir(home.as_deref(), state_dir)?;
             // 別の midistaged（開発用の cargo run など）が動いていれば静かに退く。exit 0 なので
             // launchd の KeepAlive {SuccessfulExit=false} は起こし直さない（design 05）
@@ -180,10 +204,11 @@ async fn main() -> anyhow::Result<()> {
             let trace_dir = directory.clone();
             midistaged::trace::refresh(&trace_dir);
             // design 06: 設定ポート（Roto の Serial）の用事を 1 つずつ。MIDI の poll を止めないよう別 thread
-            #[cfg(target_os = "macos")]
+            // Serial の無い OS では用事ごとに理由を言って失敗する（受け付けたまま終わらせない。design 07）
             {
                 let setups = service.runtime.clone();
                 let setups_running = running.clone();
+                let setups_backup_dir = directory.join("roto-backup");
                 std::thread::Builder::new()
                     .name("device-setups".into())
                     .spawn(move || {
@@ -194,8 +219,26 @@ async fn main() -> anyhow::Result<()> {
                                 r.next_setup_job()
                             };
                             if let Some(job) = job {
-                                let result = midistaged::roto_admin::select_setup(job.setup)
-                                    .map_err(|e| e.to_string());
+                                let result = match &job.action {
+                                    midistaged::runtime::SetupAction::Select => {
+                                        midistaged::roto_admin::select_setup(job.setup)
+                                    }
+                                    midistaged::runtime::SetupAction::Apply(desired) => {
+                                        midistaged::roto_admin::apply_setup(
+                                            job.setup,
+                                            desired,
+                                            &setups_backup_dir,
+                                        )
+                                        .map(|a| {
+                                            // Serial を開いている間 MIDI が止まる。所要を残す（間引きの設計に使う）
+                                            tracing::info!(
+                                                "{}: setup {} written: {} op(s), port open {} ms, {} requests, backup {}",
+                                                job.device_id, job.setup, a.ops, a.port_open_ms, a.requests, a.backup.display()
+                                            );
+                                        })
+                                    }
+                                }
+                                .map_err(|e| e.to_string());
                                 setups
                                     .lock()
                                     .expect("runtime mutex poisoned")
@@ -221,6 +264,31 @@ async fn main() -> anyhow::Result<()> {
                         std::thread::sleep(std::time::Duration::from_millis(50));
                     }
                 }
+                // Windows MIDI Services（design 07）。段取りは native_runtime、OS の呼び出しは winmidi
+                #[cfg(windows)]
+                {
+                    let mut native = midistaged::native_runtime::NativeRuntime::new(
+                        shared,
+                        midistaged::winmidi::Midi2Backend::new(experimental_windows_bridge),
+                    );
+                    let mut ticks: u32 = 0;
+                    while worker_running.load(Ordering::Acquire) {
+                        native.poll();
+                        ticks = ticks.wrapping_add(1);
+                        if ticks.is_multiple_of(20) {
+                            midistaged::trace::refresh(&trace_dir);
+                        }
+                        std::thread::sleep(std::time::Duration::from_millis(50));
+                    }
+                }
+                // MIDI の backend が無い OS。lease と状態だけで動き、機材は waiting のまま
+                #[cfg(not(any(target_os = "macos", windows)))]
+                {
+                    let _ = (worker_running, shared, trace_dir);
+                    tracing::warn!(
+                        "no MIDI backend on this OS yet (design 07); devices stay waiting"
+                    );
+                }
             });
             tracing::info!(
                 port = service.endpoint.port,
@@ -231,6 +299,22 @@ async fn main() -> anyhow::Result<()> {
                 let mut terminate =
                     tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())?;
                 tokio::select! { result = tokio::signal::ctrl_c() => { result?; }, _ = terminate.recv() => {} }
+            }
+            // Windows: Ctrl-C / Ctrl-Break、コンソールを閉じる、ログオフ、シャットダウン
+            #[cfg(windows)]
+            {
+                use tokio::signal::windows;
+                let mut brk = windows::ctrl_break()?;
+                let mut close = windows::ctrl_close()?;
+                let mut logoff = windows::ctrl_logoff()?;
+                let mut shutdown = windows::ctrl_shutdown()?;
+                tokio::select! {
+                    result = tokio::signal::ctrl_c() => { result?; },
+                    _ = brk.recv() => {},
+                    _ = close.recv() => {},
+                    _ = logoff.recv() => {},
+                    _ = shutdown.recv() => {},
+                }
             }
             running.store(false, Ordering::Release);
             // native Drop が lease を無効にして送信完了を待つ。timeout で引き渡さない。

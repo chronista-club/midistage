@@ -29,12 +29,14 @@ ROTO-CONTROL を VP と Ladyland で切り替えながら使う（mako 2026-10-1
 ### 台帳: setup の持ち主は midistage が持つ
 
 Roto 本体には「この setup は誰のもの」を書く場所が無い。名前で判断せず、midistage が `settings.json` に持つ。
+番号は **内部 index（0 始まり）**。Roto の画面の「SETUP NN」は 1 始まりなので 1 ずれる（index 8 = 画面の SETUP 09）。
+VP の席は index 8（mako 裁定 2026-10-18。最初の実機確認で使った 6 は控えから空に戻した）。
 
 ```json
 "device_setups": {
   "roto": {
     "ladyland": { "setups": [0, 1, 2, 3], "last": 2 },
-    "vp":       { "setups": [6],          "last": null }
+    "vp":       { "setups": [8],          "last": null }
   }
 }
 ```
@@ -58,6 +60,12 @@ Roto 本体には「この setup は誰のもの」を書く場所が無い。�
 
 - request `SetDeviceSetups { device_id, setups: [int] }`
 - request `SelectSetup { device_id, lease_token, setup: int }`
+- request `ApplyDeviceSetup { device_id, lease_token, setup: int, content: SetupContent }`（段 C。`content` の形は
+  `wire.rs` の `SetupContent` = `clients/swift/Tests/MidistageClientTests/Fixtures/apply-device-setup.json` が正。
+  載っていない席は CLEAR。本体ができるまで `not_implemented`）
+- **完了の見方**（SelectSetup / ApplyDeviceSetup 共通）: 応答は受け付けた時点で返る。**受け付けた瞬間から**
+  snapshot の `configuring` が true（列で待つ間も）。false に戻って `config_error` が無ければ完了、あれば失敗。
+  速く終わっても busy を取り落とさないよう、受付の応答の snapshot 自体が `configuring=true` を含む
 - `DeviceView` に省略可の欄: `configuring: bool`、`current_setup: int?`（midistage が最後に選んだもの。本体の SEL で変えられると知らない）、`setup_owners: { client_id: [int] }`、`config_error: string?`
 
 ## 気をつけること
@@ -66,6 +74,23 @@ Roto 本体には「この setup は誰のもの」を書く場所が無い。�
 - Roto をまだ DAW モード（MIX / PLUGIN）で使うアプリがあると、setup の切り替えだけでは足りない（SET MODE が要る）。今回は MIDI モードだけを扱う
 - **書き込み（setup の中身を焼く）はこの段に入れない**。1 席で実機の反映と後遺症を確かめてから足す
 
+## 段 C: 書き込み（ApplyDeviceSetup）
+
+lease 保持者だけ、自分の台帳の setup にだけ。サービスが 全 64 席の backup（roto-dump と同じ JSON、
+`~/Library/Application Support/Midistage/roto-backup/<日時>.json`）→ START CONFIG UPDATE → 差分だけ SET / CLEAR →
+END → 読み戻し照合 をやる。実行中は configuring、失敗は config_error と warn。1 回の所要秒を実測して記録する
+（Serial を開いている間 MIDI が止まる）。実機の最初の 1 回は VP の 1 席だけ、mako の GO で（6 で実施 → 裁定で VP の席は 8 に。6 は控えから空に戻した）。
+
 ## Status log
 
 - 2026-10-16: 起草。読み取り（PR #26）の実測を前提に、切り替えと台帳を先に入れる
+- 2026-10-16: 台帳 / SelectSetup / lease 移動での SET SETUP（PR #27）
+- 2026-10-18: 段 C の契約（ApplyDeviceSetup の型、KDL、Rust / Swift SDK、共有 fixture）と、受付時点からの configuring の保証。本体は未実装（not_implemented）
+- 2026-10-18: 段 C の本体（roto_serial の書き込み命令、roto_setup の検査と差分、roto_admin::apply_setup）。控えは `<state_dir>/roto-backup/<unix秒>-setup-NN.json`
+- 2026-10-18: **実機で最初の 1 席を書いた**（mako GO。FW 3.3.0、MIDI モード、setup 6 に名前「VP」+ switch 7「MIC」）。
+  2 op、ポートを開いていたのは 3508 ms / 135 要求（読み 65 + START/END + 2 + 読み戻し 65）、読み戻し一致。
+  SET SETUP は 66 ms。同じ中身の再 apply は 0 op / 1669 ms（読むだけ）。**書いた後に挿し直しは要らない**
+  （トレースで Roto の CC 250 件が VP に届くのを確認。ROTO-SETUP の Import で要った症状は出ない）。
+  所要の目安: 約 1.7 秒 + 27 ms × 差分の席数 + 約 1.7 秒。その間 MIDI が止まる
+- 2026-10-18: mako 裁定で VP の席は index 8（画面の SETUP 09）に。6 は控え（工場出荷の「SETUP 07」、席なし）から戻した
+  （2 op、3171 ms、読み戻し一致）。8 は空（「SETUP 09」、席なし）

@@ -49,6 +49,94 @@ public struct DeviceView: Codable, Sendable, Equatable, Identifiable {
         case configuring, currentSetup = "current_setup", setupOwners = "setup_owners", configError = "config_error"
     }
 }
+// MARK: - setup の中身（design 06 の段 C）。形の正は Fixtures/apply-device-setup.json（Rust が書く）
+
+public enum ControlMode: String, Codable, Sendable, Equatable {
+    case cc7, cc14, nrpn7, nrpn14, programChange = "program_change", note
+}
+public enum KnobHaptics: Codable, Sendable, Equatable {
+    /// 300 度のなめらかな回転。クリック位置（0–127）を 2 つまで
+    case smooth(indents: [Int])
+    /// 2–16 段のクリック。段ごとの名前
+    case steps(names: [String])
+    /// 300 度 + 中央のクリック
+    case centreIndent
+    enum CodingKeys: String, CodingKey { case kind, indents, names }
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        switch try c.decode(String.self, forKey: .kind) {
+        case "smooth": self = .smooth(indents: try c.decodeIfPresent([Int].self, forKey: .indents) ?? [])
+        case "steps": self = .steps(names: try c.decode([String].self, forKey: .names))
+        case "centre_indent": self = .centreIndent
+        case let other: throw ProtocolFailure(code: "invalid_request", message: "unknown haptics kind \(other)")
+        }
+    }
+    public func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .smooth(let indents): try c.encode("smooth", forKey: .kind); try c.encode(indents, forKey: .indents)
+        case .steps(let names): try c.encode("steps", forKey: .kind); try c.encode(names, forKey: .names)
+        case .centreIndent: try c.encode("centre_indent", forKey: .kind)
+        }
+    }
+}
+public enum SwitchAction: String, Codable, Sendable, Equatable { case push, toggle }
+/// つまみ 1 席（control 00–1F = 8 × 4 ページ）
+public struct KnobConfig: Codable, Sendable, Equatable {
+    public var control: Int
+    public var mode: ControlMode
+    public var channel: Int
+    public var param: Int
+    public var nrpnAddress: Int
+    public var min: Int
+    public var max: Int
+    public var name: String
+    public var color: Int
+    public var haptics: KnobHaptics
+    public init(control: Int, mode: ControlMode, channel: Int, param: Int = 0, nrpnAddress: Int = 0, min: Int = 0, max: Int,
+                name: String, color: Int, haptics: KnobHaptics) {
+        self.control = control; self.mode = mode; self.channel = channel; self.param = param; self.nrpnAddress = nrpnAddress
+        self.min = min; self.max = max; self.name = name; self.color = color; self.haptics = haptics
+    }
+    enum CodingKeys: String, CodingKey { case control, mode, channel, param, nrpnAddress = "nrpn_address", min, max, name, color, haptics }
+}
+/// ボタン 1 席
+public struct SwitchConfig: Codable, Sendable, Equatable {
+    public var control: Int
+    public var mode: ControlMode
+    public var channel: Int
+    public var param: Int
+    public var nrpnAddress: Int
+    public var min: Int
+    public var max: Int
+    public var name: String
+    public var color: Int
+    public var ledOn: Int
+    public var ledOff: Int
+    public var action: SwitchAction
+    public var stepNames: [String]
+    public init(control: Int, mode: ControlMode, channel: Int, param: Int = 0, nrpnAddress: Int = 0, min: Int = 0, max: Int,
+                name: String, color: Int, ledOn: Int, ledOff: Int, action: SwitchAction, stepNames: [String] = []) {
+        self.control = control; self.mode = mode; self.channel = channel; self.param = param; self.nrpnAddress = nrpnAddress
+        self.min = min; self.max = max; self.name = name; self.color = color; self.ledOn = ledOn; self.ledOff = ledOff
+        self.action = action; self.stepNames = stepNames
+    }
+    enum CodingKeys: String, CodingKey {
+        case control, mode, channel, param, nrpnAddress = "nrpn_address", min, max, name, color
+        case ledOn = "led_on", ledOff = "led_off", action, stepNames = "step_names"
+    }
+}
+/// setup 1 つの中身。載っていない席は未設定（CLEAR）にする
+public struct SetupContent: Codable, Sendable, Equatable {
+    /// 12 文字までの ASCII
+    public var name: String
+    public var knobs: [KnobConfig]
+    public var switches: [SwitchConfig]
+    public init(name: String, knobs: [KnobConfig] = [], switches: [SwitchConfig] = []) {
+        self.name = name; self.knobs = knobs; self.switches = switches
+    }
+}
+
 /// サービス自身の版と実行ファイル（design 05「常駐と配布」）。旧いサービスには無い
 public struct ServiceInfo: Codable, Sendable, Equatable {
     public var version: String

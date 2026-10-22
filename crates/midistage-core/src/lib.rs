@@ -17,6 +17,8 @@
 //! vendor in (γ) されている。 各 file 先頭の attribution コメント参照。
 //! v1+ で α 正規化 (cplp-sound-system 側を `midistage-core` 依存に切替) を計画。
 
+// framework link は Apple だけ。Windows の I/O は midistaged 側（design 07）
+#[cfg(target_os = "macos")]
 #[allow(
     non_camel_case_types,
     non_upper_case_globals,
@@ -25,6 +27,7 @@
     unused_unsafe
 )]
 pub mod coremidi_sys;
+pub mod midi1;
 pub mod ump;
 
 // TODO v0-alpha: pub mod sysex;     // KORG SysEx (Func=0x10/0x40/0x0E/0x51 等)

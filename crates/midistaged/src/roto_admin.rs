@@ -16,8 +16,12 @@
 //! - **すべて同期（ブロックする）**。async の中から直接呼ばない — `spawn_blocking` か専用 thread で
 //! - いまは **読み取りだけ**。書き込みは報告と GO の後
 
-use midistage_profiles::roto_serial::{self as rs, Event, Parser};
+use midistage_profiles::roto_serial as rs;
+// 線の世話（port）は macOS だけ。Windows は design 07 の 5 段目
+#[cfg(target_os = "macos")]
+use midistage_profiles::roto_serial::{Event, Parser};
 use serde::Serialize;
+#[cfg(target_os = "macos")]
 use std::time::{Duration, Instant};
 
 pub const VENDOR: u16 = 0x2E8A;
@@ -124,8 +128,37 @@ impl SetupDump {
     }
 }
 
+/// 書き込みの結果（ログと報告用）
+#[derive(Debug, Serialize)]
+pub struct Applied {
+    pub ops: usize,
+    /// 書く前の中身の控え
+    pub backup: std::path::PathBuf,
+    pub port_open_ms: u128,
+    pub requests: usize,
+}
+
 #[cfg(target_os = "macos")]
-pub use port::{list_serial_ports, read_all, select_setup, with_port};
+pub use port::{Session, apply_setup, list_serial_ports, read_all, select_setup, with_port};
+#[cfg(not(target_os = "macos"))]
+pub use unavailable::{apply_setup, select_setup};
+
+/// Serial の線の世話がまだ無い OS（Windows は design 07 の 5 段目）。setup の用事は受け付けたまま
+/// 終わらせず、理由を言って失敗する（`configuring` が戻り、`config_error` に出る）
+#[cfg(not(target_os = "macos"))]
+mod unavailable {
+    const REASON: &str = "ROTO serial is not available on this OS yet (design 07)";
+    pub fn select_setup(_setup: u8) -> anyhow::Result<()> {
+        anyhow::bail!(REASON)
+    }
+    pub fn apply_setup(
+        _setup: u8,
+        _desired: &crate::roto_setup::Desired,
+        _backup_dir: &std::path::Path,
+    ) -> anyhow::Result<super::Applied> {
+        anyhow::bail!(REASON)
+    }
+}
 
 #[cfg(target_os = "macos")]
 mod port {
@@ -353,6 +386,113 @@ mod port {
         Ok(dump)
     }
 
+    /// setup 1 つの中身（名前 + つまみ + ボタン）を読む。空き席は飛ばし、FD 以外の失敗はエラー
+    fn read_setup(s: &mut Session, index: u8) -> anyhow::Result<crate::roto_setup::Current> {
+        let (code, data) = s.transact(&rs::get_setup(index), rs::reply_len::SETUP)?;
+        anyhow::ensure!(code == rs::RC_OK, "GET SETUP {index}: rc={code:02X}");
+        let name = rs::Setup::parse(&data)
+            .map(|x| x.name)
+            .ok_or_else(|| anyhow::anyhow!("GET SETUP {index}: short reply"))?;
+        let mut current = crate::roto_setup::Current {
+            name,
+            ..Default::default()
+        };
+        for c in 0..rs::CONTROLS {
+            let (code, d) = s.transact(&rs::get_knob(index, c), rs::reply_len::KNOB)?;
+            match seat_outcome(code) {
+                Seat::Configured => current.knobs.push(
+                    rs::Knob::parse(&d).ok_or_else(|| anyhow::anyhow!("knob {c}: short reply"))?,
+                ),
+                Seat::Empty => {}
+                Seat::Error(rc) => anyhow::bail!("knob {c}: rc={rc:02X}"),
+            }
+            let (code, d) = s.transact(&rs::get_switch(index, c), rs::reply_len::SWITCH)?;
+            match seat_outcome(code) {
+                Seat::Configured => current.switches.push(
+                    rs::Switch::parse(&d)
+                        .ok_or_else(|| anyhow::anyhow!("switch {c}: short reply"))?,
+                ),
+                Seat::Empty => {}
+                Seat::Error(rc) => anyhow::bail!("switch {c}: rc={rc:02X}"),
+            }
+        }
+        Ok(current)
+    }
+
+    /// setup の中身を書く（段 C）。開く → 今の中身を読んで控える → 差分だけ START / SET・CLEAR / END →
+    /// 読み戻して照合 → 閉じる。差分が無ければ何も書かない
+    pub fn apply_setup(
+        setup: u8,
+        desired: &crate::roto_setup::Desired,
+        backup_dir: &std::path::Path,
+    ) -> anyhow::Result<Applied> {
+        use crate::roto_setup::{diff, encode};
+        let started = Instant::now();
+        let mut applied = with_port(None, |s| {
+            let current = read_setup(s, setup)?;
+            std::fs::create_dir_all(backup_dir)?;
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0);
+            let backup = backup_dir.join(format!("{stamp}-setup-{setup:02}.json"));
+            std::fs::write(
+                &backup,
+                serde_json::to_vec_pretty(&serde_json::json!({
+                    "setup": setup, "name": current.name, "knobs": current.knobs, "switches": current.switches,
+                    "firmware": s.firmware,
+                }))?,
+            )?;
+            let ops = diff(setup, &current, desired);
+            if ops.is_empty() {
+                return Ok(Applied {
+                    ops: 0,
+                    backup,
+                    port_open_ms: 0,
+                    requests: s.requests,
+                });
+            }
+            let ok = |s: &mut Session, what: &str, msg: &[u8]| -> anyhow::Result<()> {
+                match s.transact(msg, 0)? {
+                    (rs::RC_OK, _) => Ok(()),
+                    (code, _) => anyhow::bail!("ROTO rejected {what} (rc={code:02X})"),
+                }
+            };
+            ok(s, "START CONFIG UPDATE", &rs::start_config_update())?;
+            let mut written = Ok(());
+            for op in &ops {
+                written = ok(s, &format!("{op:?}"), &encode(setup, op));
+                if written.is_err() {
+                    break;
+                }
+            }
+            // 失敗しても END は送る（本体を書き込みセッションのまま残さない）
+            let ended = ok(s, "END CONFIG UPDATE", &rs::end_config_update());
+            written?;
+            ended?;
+            let after = read_setup(s, setup)?;
+            let remaining = diff(setup, &after, desired);
+            anyhow::ensure!(
+                remaining.is_empty(),
+                "read-back differs after write: {} seat(s) ({:?})",
+                remaining.len(),
+                remaining
+                    .iter()
+                    .take(3)
+                    .map(|o| format!("{o:?}").chars().take(40).collect::<String>())
+                    .collect::<Vec<_>>()
+            );
+            Ok(Applied {
+                ops: ops.len(),
+                backup,
+                port_open_ms: 0,
+                requests: s.requests,
+            })
+        })?;
+        applied.port_open_ms = started.elapsed().as_millis();
+        Ok(applied)
+    }
+
     /// setup を選ぶ（SET SETUP）。開く → 1 往復 → 閉じる
     pub fn select_setup(setup: u8) -> anyhow::Result<()> {
         with_port(None, |s| match s.transact(&rs::set_setup(setup), 0)? {
@@ -550,6 +690,20 @@ mod tests {
             !renamed.is_free(),
             "別の番号の既定名は、誰かが付けた名前とみなす"
         );
+    }
+
+    /// Serial の無い OS では、setup の用事を受け付けたまま終わらせない。理由を言って失敗する
+    #[cfg(not(target_os = "macos"))]
+    #[test]
+    fn setup_jobs_fail_with_a_reason_where_serial_is_not_available() {
+        let error = select_setup(2).unwrap_err().to_string();
+        assert!(error.contains("design 07"), "{error}");
+        let dir = tempfile::tempdir().unwrap();
+        let desired = crate::roto_setup::Desired::default();
+        let error = apply_setup(2, &desired, dir.path())
+            .unwrap_err()
+            .to_string();
+        assert!(error.contains("design 07"), "{error}");
     }
 }
 

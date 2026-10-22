@@ -59,3 +59,11 @@ private func state(running version: String, executable: String? = nil, holders: 
     #expect(!isNewer("0.1.0", than: "0.1.0"))
     #expect(!isNewer("dev", than: "0.1.0"), "数字で読めない版は新しいとみなさない")
 }
+
+@Test func anOlderBundleIsMentionedQuietlyAndNeverPromisesASwap() {
+    let s = summarize(state(running: "0.3.0", holders: ["vp"]))
+    #expect(s.icon == .normal)
+    #expect(s.versionMismatch)
+    #expect(s.lines.contains { $0.contains("同梱の方が古い") })
+    #expect(!s.lines.contains { $0.contains("更新待ち") || $0.contains("入れ替わります") })
+}

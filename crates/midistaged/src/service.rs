@@ -350,6 +350,9 @@ fn dispatch(
                 runtime.set_device_setups(session, &serde_json::from_value(payload)?)?
             }
             "SelectSetup" => runtime.select_setup(session, &serde_json::from_value(payload)?)?,
+            "ApplyDeviceSetup" => {
+                runtime.apply_device_setup(session, &serde_json::from_value(payload)?)?
+            }
             "Present" => {
                 let request: Present = serde_json::from_value(payload)?;
                 runtime.broker.authorize_output(
@@ -397,6 +400,7 @@ fn failure(reason: &anyhow::Error) -> Reply {
         Some(AccessError::UnknownDevice) => "unknown_device",
         Some(AccessError::UnknownSession) => "unauthenticated",
         None if reason.to_string() == "unauthenticated" => "unauthenticated",
+        None if reason.to_string() == "not_implemented" => "not_implemented",
         None => "invalid_request",
     };
     error(code, &reason.to_string())
