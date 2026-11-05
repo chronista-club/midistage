@@ -66,6 +66,10 @@ VP の席は index 8（mako 裁定 2026-10-18。最初の実機確認で使っ�
 - **完了の見方**（SelectSetup / ApplyDeviceSetup 共通）: 応答は受け付けた時点で返る。**受け付けた瞬間から**
   snapshot の `configuring` が true（列で待つ間も）。false に戻って `config_error` が無ければ完了、あれば失敗。
   速く終わっても busy を取り落とさないよう、受付の応答の snapshot 自体が `configuring=true` を含む
+- **ApplyDeviceSetup の完了は「本体の画面・手応えにも反映済み」を含む**（2026-11-05）。表に出ている setup を
+  書いたときは、サービスが同じ Serial セッション内で別 index へ SET SETUP してから元へ戻し、読み込み直させる。
+  アプリは Apply のあとに SelectSetup を投げ直す必要がない（同じ index への SET SETUP は本体で no-op なので、
+  投げ直しても直らない）。表に出ていない setup を書いたときは選び直さない（`current_setup` は変わらない）
 - `DeviceView` に省略可の欄: `configuring: bool`、`current_setup: int?`（midistage が最後に選んだもの。本体の SEL で変えられると知らない）、`setup_owners: { client_id: [int] }`、`config_error: string?`
 
 ## 気をつけること
@@ -78,7 +82,10 @@ VP の席は index 8（mako 裁定 2026-10-18。最初の実機確認で使っ�
 
 lease 保持者だけ、自分の台帳の setup にだけ。サービスが 全 64 席の backup（roto-dump と同じ JSON、
 `~/Library/Application Support/Midistage/roto-backup/<日時>.json`）→ START CONFIG UPDATE → 差分だけ SET / CLEAR →
-END → 読み戻し照合 をやる。実行中は configuring、失敗は config_error と warn。1 回の所要秒を実測して記録する
+END → 読み戻し照合 → **表に出ている setup なら別 index を経由して選び直す（画面の再ロード）** をやる。
+END CONFIG UPDATE は保存領域にしか効かず、表に出ている setup の LCD・手応えは古いまま残る（実機 2026-11-04、
+VP の setup 8 を書いても名前が `lead` のまま。本体の SEL で別の setup に出て戻ると新しい名前が出た）。
+経由先は、書いた index でも誰かの席でもない最初の index（`roto_setup::reload_via`）。実行中は configuring、失敗は config_error と warn。1 回の所要秒を実測して記録する
 （Serial を開いている間 MIDI が止まる）。実機の最初の 1 回は VP の 1 席だけ、mako の GO で（6 で実施 → 裁定で VP の席は 8 に。6 は控えから空に戻した）。
 
 ## Status log
@@ -92,5 +99,9 @@ END → 読み戻し照合 をやる。実行中は configuring、失敗は conf
   SET SETUP は 66 ms。同じ中身の再 apply は 0 op / 1669 ms（読むだけ）。**書いた後に挿し直しは要らない**
   （トレースで Roto の CC 250 件が VP に届くのを確認。ROTO-SETUP の Import で要った症状は出ない）。
   所要の目安: 約 1.7 秒 + 27 ms × 差分の席数 + 約 1.7 秒。その間 MIDI が止まる
+- 2026-11-05: **書いたあとの画面の再ロード**。VP lead の実機報告（11-04、midistaged 0.3.0）: 選択中の setup 8 を
+  Apply すると読み戻しは一致するのに LCD は古い名前のまま、同じ index の SelectSetup でも直らない。
+  `apply_setup` が読み戻し照合のあとに GET CURRENT SETUP を見て、書いた setup が表に出ていれば別 index へ
+  SET SETUP → 元へ戻す（約 66 ms × 2）。ログに `screen reloaded via setup N` が出る。**実機確認待ち**
 - 2026-10-18: mako 裁定で VP の席は index 8（画面の SETUP 09）に。6 は控え（工場出荷の「SETUP 07」、席なし）から戻した
   （2 op、3171 ms、読み戻し一致）。8 は空（「SETUP 09」、席なし）

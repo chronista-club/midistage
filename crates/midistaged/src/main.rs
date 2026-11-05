@@ -213,10 +213,16 @@ async fn main() -> anyhow::Result<()> {
                     .name("device-setups".into())
                     .spawn(move || {
                         while setups_running.load(Ordering::Acquire) {
-                            let job = {
+                            let (job, taken) = {
                                 let mut r = setups.lock().expect("runtime mutex poisoned");
                                 r.plan_setup_switches();
-                                r.next_setup_job()
+                                let job = r.next_setup_job();
+                                // 誰かの席（画面の再ロードで経由しない index）
+                                let taken: Vec<u8> = job
+                                    .as_ref()
+                                    .map(|j| r.setup_owners(&j.device_id).into_values().flatten().collect())
+                                    .unwrap_or_default();
+                                (job, taken)
                             };
                             if let Some(job) = job {
                                 let result = match &job.action {
@@ -227,13 +233,18 @@ async fn main() -> anyhow::Result<()> {
                                         midistaged::roto_admin::apply_setup(
                                             job.setup,
                                             desired,
+                                            &taken,
                                             &setups_backup_dir,
                                         )
                                         .map(|a| {
                                             // Serial を開いている間 MIDI が止まる。所要を残す（間引きの設計に使う）
+                                            let reload = match a.reloaded_via {
+                                                Some(via) => format!(", screen reloaded via setup {via}"),
+                                                None => String::new(),
+                                            };
                                             tracing::info!(
-                                                "{}: setup {} written: {} op(s), port open {} ms, {} requests, backup {}",
-                                                job.device_id, job.setup, a.ops, a.port_open_ms, a.requests, a.backup.display()
+                                                "{}: setup {} written: {} op(s), port open {} ms, {} requests{}, backup {}",
+                                                job.device_id, job.setup, a.ops, a.port_open_ms, a.requests, reload, a.backup.display()
                                             );
                                         })
                                     }

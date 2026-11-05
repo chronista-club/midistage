@@ -136,6 +136,8 @@ pub struct Applied {
     pub backup: std::path::PathBuf,
     pub port_open_ms: u128,
     pub requests: usize,
+    /// 表示を読み込み直させるために経由した index（書いた setup が表に出ていたときだけ）
+    pub reloaded_via: Option<u8>,
 }
 
 #[cfg(target_os = "macos")]
@@ -154,6 +156,7 @@ mod unavailable {
     pub fn apply_setup(
         _setup: u8,
         _desired: &crate::roto_setup::Desired,
+        _taken: &[u8],
         _backup_dir: &std::path::Path,
     ) -> anyhow::Result<super::Applied> {
         anyhow::bail!(REASON)
@@ -420,13 +423,15 @@ mod port {
     }
 
     /// setup の中身を書く（段 C）。開く → 今の中身を読んで控える → 差分だけ START / SET・CLEAR / END →
-    /// 読み戻して照合 → 閉じる。差分が無ければ何も書かない
+    /// 読み戻して照合 → 表に出ている setup を書いたなら別 index を経由して選び直す（画面の再ロード）→ 閉じる。
+    /// 差分が無ければ何も書かない。`taken` は誰かの席（経由先に使わない）
     pub fn apply_setup(
         setup: u8,
         desired: &crate::roto_setup::Desired,
+        taken: &[u8],
         backup_dir: &std::path::Path,
     ) -> anyhow::Result<Applied> {
-        use crate::roto_setup::{diff, encode};
+        use crate::roto_setup::{diff, encode, reload_via};
         let started = Instant::now();
         let mut applied = with_port(None, |s| {
             let current = read_setup(s, setup)?;
@@ -450,6 +455,7 @@ mod port {
                     backup,
                     port_open_ms: 0,
                     requests: s.requests,
+                    reloaded_via: None,
                 });
             }
             let ok = |s: &mut Session, what: &str, msg: &[u8]| -> anyhow::Result<()> {
@@ -482,11 +488,31 @@ mod port {
                     .map(|o| format!("{o:?}").chars().take(40).collect::<String>())
                     .collect::<Vec<_>>()
             );
+            // END は保存領域にしか効かない。表に出ている setup を書いたなら、別 index へ出て戻り、
+            // 画面・手応えを新しい中身で読み込み直させる（同じ index への SET SETUP は no-op）
+            let on_screen = match s.transact(&rs::get_current_setup(), rs::reply_len::SETUP)? {
+                (rs::RC_OK, d) => rs::Setup::parse(&d).map(|c| c.index),
+                _ => None,
+            };
+            let reloaded_via = reload_via(setup, on_screen, taken);
+            if let Some(via) = reloaded_via {
+                ok(
+                    s,
+                    &format!("SET SETUP {via} (reload detour)"),
+                    &rs::set_setup(via),
+                )?;
+                ok(
+                    s,
+                    &format!("SET SETUP {setup} (reload back)"),
+                    &rs::set_setup(setup),
+                )?;
+            }
             Ok(Applied {
                 ops: ops.len(),
                 backup,
                 port_open_ms: 0,
                 requests: s.requests,
+                reloaded_via,
             })
         })?;
         applied.port_open_ms = started.elapsed().as_millis();
