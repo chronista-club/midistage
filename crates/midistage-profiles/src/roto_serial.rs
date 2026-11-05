@@ -101,7 +101,8 @@ pub fn set_setup(setup: u8) -> Vec<u8> {
 pub fn start_config_update() -> Vec<u8> {
     request(GENERAL, 0x04, &[])
 }
-/// END CONFIG UPDATE（01 05）。今選ばれている setup への変更はここで本体に反映される
+/// END CONFIG UPDATE（01 05）。変更はここで保存領域に反映される。**表に出ている setup の画面・手応えは
+/// 読み込み直されない**（実機 2026-11-04）。見せたければ別 index へ SET SETUP してから戻す（`roto_admin::apply_setup`）
 pub fn end_config_update() -> Vec<u8> {
     request(GENERAL, 0x05, &[])
 }

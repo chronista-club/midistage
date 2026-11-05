@@ -249,6 +249,21 @@ pub fn diff(setup: u8, current: &Current, desired: &Desired) -> Vec<Op> {
     ops
 }
 
+/// 書いたあとに表示を読み込み直させるための「経由先」。
+///
+/// END CONFIG UPDATE は保存領域にしか効かず、表に出ている setup の画面・手応えは再ロードされない
+/// （実機 2026-11-04: 選択中の setup 8 を書いても LCD は古い名前のまま。同じ index への SET SETUP は
+/// no-op で直らない）。書いた setup が表に出ているとき（本体の現在値が読めなかったときも）だけ、
+/// 別 index へ SET SETUP してから元へ戻す。経由先は、書いた index でも誰かの席でもない最初の index。
+/// 64 席すべてが埋まっていれば、書いた index 以外の最初の index（一瞬の経由なので害はない）。
+pub fn reload_via(written: u8, on_screen: Option<u8>, taken: &[u8]) -> Option<u8> {
+    if on_screen.is_some_and(|s| s != written) {
+        return None;
+    }
+    let free = (0..rs::SETUPS).find(|i| *i != written && !taken.contains(i));
+    free.or_else(|| (0..rs::SETUPS).find(|i| *i != written))
+}
+
 /// 操作をバイト列に（送る順のまま）
 pub fn encode(setup: u8, op: &Op) -> Vec<u8> {
     match op {
@@ -408,6 +423,25 @@ mod tests {
             let error = desired(6, &c).unwrap_err().to_string();
             assert!(error.contains(expect), "{expect}: {error}");
         }
+    }
+
+    #[test]
+    fn reload_is_needed_only_when_the_written_setup_is_the_one_on_screen() {
+        // 表に出ていない setup を書いた → 画面は変わらないので選び直さない
+        assert_eq!(reload_via(8, Some(3), &[0, 1, 2, 3, 8]), None);
+        // 本体の現在値が読めなかった → 分からないときは選び直す（害は 66 ms × 2 だけ）
+        assert_eq!(reload_via(8, None, &[]), Some(0));
+        // 表に出ている setup を書いた → 誰の席でもない最初の index を経由して戻る
+        assert_eq!(reload_via(8, Some(8), &[0, 1, 2, 3, 8]), Some(4));
+        // 書いた index 自身は経由先に選ばない
+        assert_eq!(reload_via(0, Some(0), &[]), Some(1));
+    }
+
+    #[test]
+    fn reload_detour_falls_back_to_any_other_index_when_every_seat_is_taken() {
+        let all: Vec<u8> = (0..rs::SETUPS).collect();
+        assert_eq!(reload_via(8, Some(8), &all), Some(0));
+        assert_eq!(reload_via(0, Some(0), &all), Some(1));
     }
 
     #[test]
